@@ -96,7 +96,7 @@ async function callPriyaAI(
   conversationHistory: ChatMessage[],
   leads: Lead[],
 ): Promise<string> {
-  const apiKey = import.meta.env.VITE_GEMINI_API_KEY || "AIzaSyD-placeholder";
+  const apiKey = import.meta.env.VITE_OPENAI_API_KEY || "";
 
   const completedLeads = leads.filter(
     (l) => l.workflowStatus === "Completed",
@@ -308,38 +308,34 @@ async function callPriyaAI(
 
   const recentHistory = conversationHistory.slice(-10);
 
-  const contents = [
+  const messages = [
+    { role: "system", content: systemPrompt },
     ...recentHistory.map((msg) => ({
-      role: msg.sender === "user" ? "user" : "model",
-      parts: [{ text: msg.text }],
+      role: msg.sender === "user" ? "user" : "assistant",
+      content: msg.text,
     })),
-    {
-      role: "user",
-      parts: [{ text: userMessage }],
-    },
+    { role: "user", content: userMessage },
   ];
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 350,
-          },
-        }),
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
-    );
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages,
+        temperature: 0.7,
+        max_tokens: 350,
+      }),
+    });
 
     if (!response.ok) throw new Error(`API error: ${response.status}`);
 
     const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const text = data?.choices?.[0]?.message?.content;
     if (!text) throw new Error("No response text");
     return text.trim();
   } catch (err) {
