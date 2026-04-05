@@ -17,6 +17,7 @@ export default function LoginPage({ onTrackPolicy }: LoginPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +64,7 @@ export default function LoginPage({ onTrackPolicy }: LoginPageProps) {
         {/* Branding */}
         <div className="text-center mb-8">
           <div
-            className="inline-flex items-center justify-center w-18 h-18 rounded-2xl mb-4 shadow-2xl overflow-hidden"
+            className="inline-flex items-center justify-center rounded-2xl mb-4 shadow-2xl overflow-hidden"
             style={{
               background: "linear-gradient(135deg, #1d4ed8, #7c3aed)",
               width: 72,
@@ -71,18 +72,16 @@ export default function LoginPage({ onTrackPolicy }: LoginPageProps) {
               boxShadow: "0 0 30px rgba(99,102,241,0.5)",
             }}
           >
-            <img
-              src="/assets/generated/pb-insurance-icon-192.dim_192x192.png"
-              alt="PB Insurance"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
-            <Shield
-              className="w-9 h-9 text-white"
-              style={{ display: "none" }}
-            />
+            {!logoError ? (
+              <img
+                src="/assets/screenshot_20260405-205518.chrome-019d5e42-283b-7374-b5f8-fe4781c839fe.png"
+                alt="PB Insurance Logo"
+                className="w-full h-full object-cover"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <Shield className="w-9 h-9 text-white" />
+            )}
           </div>
           <h1 className="text-3xl font-black text-white tracking-tight">
             PB Insurance AI

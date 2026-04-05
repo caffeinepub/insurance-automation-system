@@ -36,10 +36,10 @@ interface DashboardPageProps {
 }
 
 const glassCard: React.CSSProperties = {
-  backdropFilter: "blur(12px)",
-  WebkitBackdropFilter: "blur(12px)",
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.08)",
+  backdropFilter: "blur(6px)",
+  WebkitBackdropFilter: "blur(6px)",
+  background: "rgba(255,255,255,0.05)",
+  border: "1px solid rgba(255,255,255,0.12)",
 };
 
 export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
@@ -256,16 +256,16 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
       accentColor: "rgba(59,130,246,0.3)",
     },
     {
-      label: "Business ₹",
-      value: `₹${stats.totalBusiness.toLocaleString("en-IN")}`,
+      label: "Business \u20b9",
+      value: `\u20b9${stats.totalBusiness.toLocaleString("en-IN")}`,
       icon: TrendingUp,
       gradientFrom: "#10b981",
       gradientTo: "#14b8a6",
       accentColor: "rgba(16,185,129,0.3)",
     },
     {
-      label: "Commission ₹",
-      value: `₹${stats.totalCommission.toLocaleString("en-IN")}`,
+      label: "Commission \u20b9",
+      value: `\u20b9${stats.totalCommission.toLocaleString("en-IN")}`,
       icon: Award,
       gradientFrom: "#8b5cf6",
       gradientTo: "#a855f7",
@@ -299,14 +299,14 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
     },
     {
       label: "Total Business",
-      value: `₹${(agentPerfKpis?.totalBusiness ?? 0).toLocaleString("en-IN")}`,
+      value: `\u20b9${(agentPerfKpis?.totalBusiness ?? 0).toLocaleString("en-IN")}`,
       icon: TrendingUp,
       gradientFrom: "#8b5cf6",
       gradientTo: "#a855f7",
     },
     {
       label: "Commission Earned",
-      value: `₹${(agentPerfKpis?.commissionEarned ?? 0).toLocaleString("en-IN")}`,
+      value: `\u20b9${(agentPerfKpis?.commissionEarned ?? 0).toLocaleString("en-IN")}`,
       icon: Award,
       gradientFrom: "#f97316",
       gradientTo: "#f59e0b",
@@ -356,24 +356,26 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
       </div>
 
       <div className="flex-1 md:ml-[240px] flex flex-col overflow-hidden">
-        {/* Mobile top nav bar - dark glass */}
+        {/* Mobile top nav bar */}
         <header
           className="md:hidden flex items-center justify-between px-4 py-3 flex-shrink-0"
           style={{
-            background: "rgba(0,0,0,0.3)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(10,14,26,0.95)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            borderBottom: "1px solid rgba(255,255,255,0.10)",
           }}
         >
           <div className="flex items-center gap-2.5">
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
               style={{
-                background: "linear-gradient(135deg, #1d4ed8, #7c3aed)",
+                background: "#ffffff",
+                boxShadow:
+                  "0 0 12px rgba(99,102,241,0.5), 0 2px 8px rgba(0,0,0,0.4)",
               }}
             >
-              <Shield className="w-4 h-4 text-white" />
+              <Shield className="w-5 h-5 text-indigo-600" />
             </div>
             <div>
               <span className="text-sm font-bold text-white">
@@ -441,10 +443,11 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
               <div className="hidden md:flex items-center justify-between">
                 <div>
                   <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-0.5">
-                    AI Insurance Trainer 🚀
+                    AI Insurance Trainer \ud83d\ude80
                   </p>
                   <h1 className="text-2xl font-black text-white">
-                    Welcome back! Priya is ready to help you close more deals 💰
+                    Welcome back! Priya is ready to help you close more deals
+                    \ud83d\udcb0
                   </h1>
                   <p className="text-sm text-slate-400 mt-0.5">
                     {isAdmin
@@ -494,24 +497,24 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
               {/* Mobile greeting */}
               <div className="md:hidden">
                 <h1 className="text-lg font-black text-white">
-                  Hi, {currentUser?.name?.split(" ")[0]}! 👋
+                  Hi, {currentUser?.name?.split(" ")[0]}! \ud83d\udc4b
                 </h1>
                 <p className="text-xs text-slate-400">
                   {isAdmin ? "All leads" : "Your leads"}
                 </p>
               </div>
 
-              {/* ── Premium KPI Cards (4 large cards) ── */}
+              {/* ── Premium KPI Cards ── */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {kpiCards.map((card, i) => (
                   <div
                     key={card.label}
                     className="rounded-2xl p-5 md:p-6 shadow-xl relative overflow-hidden"
                     style={{
-                      backdropFilter: "blur(16px)",
-                      WebkitBackdropFilter: "blur(16px)",
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.09)",
+                      backdropFilter: "blur(6px)",
+                      WebkitBackdropFilter: "blur(6px)",
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.13)",
                     }}
                     data-ocid={`dashboard.card.${i + 1}`}
                   >
@@ -542,7 +545,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                       {card.value}
                     </p>
                     {/* Label */}
-                    <p className="text-xs md:text-sm font-medium text-slate-400">
+                    <p className="text-xs md:text-sm font-semibold text-slate-300">
                       {card.label}
                     </p>
                     {/* Bottom accent line */}
@@ -556,41 +559,69 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                 ))}
               </div>
 
-              {/* ── Priya AI Assistant Card ── */}
+              {/* ── Priya AI Assistant Card (with avatar) ── */}
               <div
                 className="rounded-2xl p-5 shadow-xl"
                 style={{
-                  backdropFilter: "blur(16px)",
-                  WebkitBackdropFilter: "blur(16px)",
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
                   background:
-                    "linear-gradient(135deg, rgba(88,28,135,0.30), rgba(49,46,129,0.30))",
-                  border: "1px solid rgba(139,92,246,0.30)",
-                  boxShadow: "0 8px 32px rgba(139,92,246,0.15)",
+                    "linear-gradient(135deg, rgba(88,28,135,0.35), rgba(49,46,129,0.35))",
+                  border: "1.5px solid rgba(139,92,246,0.40)",
+                  boxShadow: "0 8px 32px rgba(139,92,246,0.18)",
                 }}
               >
                 <div className="flex items-center gap-4">
-                  {/* Avatar with pulse ring */}
+                  {/* Priya Avatar */}
                   <div className="relative flex-shrink-0">
+                    {/* Outer glow ring */}
                     <div
-                      className="absolute inset-0 rounded-full animate-pulse-glow"
-                      style={{ borderRadius: "50%" }}
-                    />
-                    <div
-                      className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-black relative z-10"
+                      className="absolute inset-[-4px] rounded-full"
                       style={{
-                        background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                        boxShadow: "0 0 20px rgba(139,92,246,0.5)",
+                        background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                        filter: "blur(8px)",
+                        opacity: 0.7,
+                      }}
+                    />
+                    {/* Avatar circle */}
+                    <div
+                      className="relative z-10 w-16 h-16 rounded-full overflow-hidden"
+                      style={{
+                        border: "2.5px solid rgba(167,139,250,0.7)",
+                        boxShadow:
+                          "0 0 0 3px rgba(99,102,241,0.25), 0 0 20px rgba(139,92,246,0.5)",
                       }}
                     >
-                      P
+                      <img
+                        src="/assets/generated/priya-avatar-transparent.dim_200x200.png"
+                        alt="Priya AI Avatar"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to initial if image fails
+                          (e.currentTarget as HTMLImageElement).style.display =
+                            "none";
+                        }}
+                      />
+                      {/* fallback gradient shown behind image */}
+                      <div
+                        className="absolute inset-0 flex items-center justify-center text-white text-2xl font-black"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                          zIndex: -1,
+                        }}
+                      >
+                        P
+                      </div>
                     </div>
                     {/* Green status dot */}
                     <div
-                      className="absolute bottom-0 right-0 w-4 h-4 rounded-full z-20 animate-status-pulse"
+                      className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full z-20"
                       style={{
                         background: "#22c55e",
                         border: "2px solid #0a0e1a",
-                        boxShadow: "0 0 8px rgba(34,197,94,0.6)",
+                        boxShadow: "0 0 8px rgba(34,197,94,0.8)",
+                        animation: "pulse 2s infinite",
                       }}
                     />
                   </div>
@@ -601,39 +632,54 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                       Priya AI Assistant
                     </h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <div className="w-2 h-2 rounded-full bg-green-400 animate-status-pulse" />
+                      <div
+                        className="w-2 h-2 rounded-full bg-green-400"
+                        style={{ animation: "pulse 1.5s infinite" }}
+                      />
                       <span className="text-sm font-semibold text-green-400">
                         Active
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">
-                      Voice-enabled • Hindi + English • Always Ready
+                    <p className="text-xs text-slate-300 mt-1 leading-snug">
+                      Namaste! Main Priya hoon — aapki insurance assistant.
+                      Quotation, documents, ya payment — sab mein madad karungi.
                     </p>
                   </div>
 
-                  {/* Right: glowing mic + button */}
+                  {/* Right: mic animation + button */}
                   <div className="flex items-center gap-3 flex-shrink-0">
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center"
-                      style={{
-                        background: "rgba(139,92,246,0.20)",
-                        border: "1px solid rgba(139,92,246,0.40)",
-                      }}
-                    >
-                      <Mic
-                        className="w-5 h-5 text-purple-400"
+                    {/* Animated mic */}
+                    <div className="relative">
+                      <div
+                        className="absolute inset-0 rounded-full"
                         style={{
-                          filter: "drop-shadow(0 0 6px rgba(139,92,246,0.7))",
+                          background: "rgba(139,92,246,0.3)",
+                          animation:
+                            "ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite",
                         }}
                       />
+                      <div
+                        className="relative w-11 h-11 rounded-full flex items-center justify-center z-10"
+                        style={{
+                          background: "rgba(139,92,246,0.20)",
+                          border: "1.5px solid rgba(139,92,246,0.50)",
+                        }}
+                      >
+                        <Mic
+                          className="w-5 h-5 text-purple-300"
+                          style={{
+                            filter: "drop-shadow(0 0 6px rgba(139,92,246,0.9))",
+                          }}
+                        />
+                      </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => {}}
                       className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all"
                       style={{
-                        background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
-                        boxShadow: "0 0 16px rgba(139,92,246,0.40)",
+                        background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
+                        boxShadow: "0 0 16px rgba(139,92,246,0.45)",
                       }}
                       data-ocid="priya.talk.button"
                     >
@@ -648,17 +694,17 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
               <div
                 className="rounded-2xl overflow-hidden shadow-xl"
                 style={{
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
                   background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.11)",
                 }}
                 data-ocid="perf.section"
               >
                 {/* Section header */}
                 <div
                   className="flex items-center justify-between px-4 py-3.5"
-                  style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                  style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
                 >
                   <div className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-indigo-400" />
@@ -669,7 +715,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                   {/* Filter toggle */}
                   <div
                     className="flex rounded-lg p-0.5"
-                    style={{ background: "rgba(255,255,255,0.06)" }}
+                    style={{ background: "rgba(255,255,255,0.07)" }}
                   >
                     {(["today", "month", "all"] as PerfFilter[]).map((f) => (
                       <button
@@ -707,8 +753,8 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                         key={card.label}
                         className="rounded-xl p-3 space-y-2"
                         style={{
-                          background: "rgba(255,255,255,0.04)",
-                          border: "1px solid rgba(255,255,255,0.07)",
+                          background: "rgba(255,255,255,0.05)",
+                          border: "1px solid rgba(255,255,255,0.10)",
                         }}
                       >
                         <div
@@ -722,7 +768,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                         <p className="text-base font-black text-white leading-tight">
                           {card.value}
                         </p>
-                        <p className="text-[10px] text-slate-400 font-medium">
+                        <p className="text-[10px] text-slate-300 font-semibold">
                           {card.label}
                         </p>
                       </div>
@@ -737,23 +783,23 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                       <thead>
                         <tr
                           style={{
-                            borderBottom: "1px solid rgba(255,255,255,0.06)",
-                            background: "rgba(255,255,255,0.02)",
+                            borderBottom: "1px solid rgba(255,255,255,0.08)",
+                            background: "rgba(255,255,255,0.03)",
                           }}
                         >
-                          <th className="px-4 py-2.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wide">
                             Agent
                           </th>
-                          <th className="px-4 py-2.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wide">
                             Leads
                           </th>
-                          <th className="px-4 py-2.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wide">
                             Policies
                           </th>
-                          <th className="px-4 py-2.5 text-right text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wide">
                             Business
                           </th>
-                          <th className="px-4 py-2.5 text-right text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 text-right text-[11px] font-bold text-slate-400 uppercase tracking-wide">
                             Commission
                           </th>
                         </tr>
@@ -763,7 +809,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                           <tr
                             key={agent.email}
                             style={{
-                              borderBottom: "1px solid rgba(255,255,255,0.04)",
+                              borderBottom: "1px solid rgba(255,255,255,0.05)",
                               background:
                                 idx % 2 === 0
                                   ? "transparent"
@@ -781,13 +827,13 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                                 >
                                   {agent.name.charAt(0)}
                                 </div>
-                                <span className="font-medium text-slate-200 text-sm">
+                                <span className="font-semibold text-white text-sm">
                                   {agent.name}
                                 </span>
                               </div>
                             </td>
                             <td className="px-4 py-3 text-center">
-                              <span className="text-xs font-bold text-slate-300">
+                              <span className="text-xs font-bold text-white">
                                 {agent.leadsHandled}
                               </span>
                             </td>
@@ -808,11 +854,11 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                                 {agent.completedPolicies}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-right font-mono font-semibold text-slate-200">
+                            <td className="px-4 py-3 text-right font-mono font-semibold text-white">
                               {agent.totalBusiness > 0 ? (
-                                `₹${agent.totalBusiness.toLocaleString("en-IN")}`
+                                `\u20b9${agent.totalBusiness.toLocaleString("en-IN")}`
                               ) : (
-                                <span className="text-slate-600">—</span>
+                                <span className="text-slate-500">&mdash;</span>
                               )}
                             </td>
                             <td className="px-4 py-3 text-right">
@@ -821,16 +867,16 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                                   className="inline-block px-2 py-0.5 rounded-md font-bold font-mono text-xs text-emerald-300"
                                   style={{
                                     background: "rgba(16,185,129,0.15)",
-                                    border: "1px solid rgba(16,185,129,0.25)",
+                                    border: "1px solid rgba(16,185,129,0.30)",
                                   }}
                                 >
-                                  ₹
+                                  \u20b9
                                   {agent.commissionEarned.toLocaleString(
                                     "en-IN",
                                   )}
                                 </span>
                               ) : (
-                                <span className="text-slate-600">—</span>
+                                <span className="text-slate-500">&mdash;</span>
                               )}
                             </td>
                           </tr>
@@ -838,15 +884,15 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                         {/* Totals row */}
                         <tr
                           style={{
-                            borderTop: "2px solid rgba(255,255,255,0.10)",
-                            background: "rgba(255,255,255,0.03)",
+                            borderTop: "2px solid rgba(255,255,255,0.12)",
+                            background: "rgba(255,255,255,0.04)",
                           }}
                         >
-                          <td className="px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wide">
+                          <td className="px-4 py-3 text-xs font-bold text-slate-300 uppercase tracking-wide">
                             Total
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className="text-xs font-bold text-slate-300">
+                            <span className="text-xs font-bold text-white">
                               {adminPerfTable.reduce(
                                 (s, a) => s + a.leadsHandled,
                                 0,
@@ -854,7 +900,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className="text-xs font-bold text-slate-300">
+                            <span className="text-xs font-bold text-white">
                               {agentBreakdown.reduce(
                                 (s, a) => s + a.policies,
                                 0,
@@ -862,7 +908,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-right font-mono font-bold text-white">
-                            ₹
+                            \u20b9
                             {agentBreakdown
                               .reduce((s, a) => s + a.business, 0)
                               .toLocaleString("en-IN")}
@@ -872,10 +918,10 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                               className="inline-block px-2 py-0.5 rounded-md font-bold font-mono text-xs text-emerald-300"
                               style={{
                                 background: "rgba(16,185,129,0.20)",
-                                border: "1px solid rgba(16,185,129,0.35)",
+                                border: "1px solid rgba(16,185,129,0.40)",
                               }}
                             >
-                              ₹
+                              \u20b9
                               {agentBreakdown
                                 .reduce((s, a) => s + a.commission, 0)
                                 .toLocaleString("en-IN")}
@@ -892,20 +938,20 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
               <div
                 className="rounded-2xl shadow-xl overflow-hidden"
                 style={{
-                  backdropFilter: "blur(12px)",
-                  WebkitBackdropFilter: "blur(12px)",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.11)",
                 }}
               >
                 <div
                   className="flex items-center justify-between px-4 py-3.5"
-                  style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                  style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
                 >
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-slate-400" />
+                    <Users className="w-4 h-4 text-slate-300" />
                     <h2 className="text-sm font-bold text-white">Leads</h2>
-                    <span className="text-xs text-slate-500 font-medium">
+                    <span className="text-xs text-slate-400 font-medium">
                       ({filteredLeads.length}
                       {filteredLeads.length !== visibleLeads.length
                         ? `/${visibleLeads.length}`
@@ -917,7 +963,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                         className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-blue-300"
                         style={{
                           background: "rgba(59,130,246,0.15)",
-                          border: "1px solid rgba(59,130,246,0.25)",
+                          border: "1px solid rgba(59,130,246,0.30)",
                         }}
                       >
                         All Agents
@@ -956,16 +1002,16 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                 {/* Search bar */}
                 <div className="px-4 pt-3">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by name, mobile or email…"
+                      placeholder="Search by name, mobile or email\u2026"
                       className="w-full pl-9 pr-9 py-2 text-sm rounded-xl focus:outline-none text-white placeholder:text-slate-500"
                       style={{
-                        background: "rgba(255,255,255,0.05)",
-                        border: "1px solid rgba(255,255,255,0.09)",
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.12)",
                       }}
                       data-ocid="leads.search_input"
                     />
@@ -999,9 +1045,9 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                               border: "1px solid transparent",
                             }
                           : {
-                              background: "rgba(255,255,255,0.05)",
-                              border: "1px solid rgba(255,255,255,0.10)",
-                              color: "#94a3b8",
+                              background: "rgba(255,255,255,0.06)",
+                              border: "1px solid rgba(255,255,255,0.13)",
+                              color: "#cbd5e1",
                             }
                       }
                       data-ocid="leads.status_filter.all.toggle"
@@ -1013,7 +1059,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                           background:
                             statusFilter === STATUS_ALL
                               ? "rgba(255,255,255,0.20)"
-                              : "rgba(255,255,255,0.08)",
+                              : "rgba(255,255,255,0.10)",
                         }}
                       >
                         {statusCounts.All}
@@ -1041,9 +1087,9 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                                   border: "1px solid transparent",
                                 }
                               : {
-                                  background: "rgba(255,255,255,0.04)",
-                                  border: "1px solid rgba(255,255,255,0.09)",
-                                  color: "#94a3b8",
+                                  background: "rgba(255,255,255,0.05)",
+                                  border: "1px solid rgba(255,255,255,0.11)",
+                                  color: "#cbd5e1",
                                 }
                           }
                           data-ocid={`leads.status_filter.${status
@@ -1057,13 +1103,13 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                               background: isActive
                                 ? "rgba(255,255,255,0.20)"
                                 : count > 0
-                                  ? "rgba(59,130,246,0.20)"
-                                  : "rgba(255,255,255,0.06)",
+                                  ? "rgba(59,130,246,0.25)"
+                                  : "rgba(255,255,255,0.07)",
                               color: isActive
                                 ? "#fff"
                                 : count > 0
                                   ? "#93c5fd"
-                                  : "#475569",
+                                  : "#64748b",
                             }}
                           >
                             {count}
@@ -1084,14 +1130,14 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                         className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
                         style={glassCard}
                       >
-                        <Users className="w-6 h-6 text-slate-500" />
+                        <Users className="w-6 h-6 text-slate-400" />
                       </div>
-                      <p className="text-sm font-semibold text-slate-300">
+                      <p className="text-sm font-semibold text-white">
                         {searchQuery || statusFilter !== STATUS_ALL
                           ? "No leads match your filter"
                           : "No leads yet"}
                       </p>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-slate-400 mt-1">
                         {searchQuery || statusFilter !== STATUS_ALL
                           ? "Try clearing the search or status filter"
                           : 'Tap "New Lead" to get started'}
@@ -1116,7 +1162,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
           {/* Footer */}
           <footer
             className="px-4 py-4 text-center text-xs text-slate-400 mt-2"
-            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+            style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
           >
             Powered by Prashant Chandratre | 7709446589
           </footer>

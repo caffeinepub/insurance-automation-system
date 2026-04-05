@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
+import { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { useInstallPrompt } from "../hooks/useInstallPrompt";
 
@@ -39,6 +40,7 @@ export default function Sidebar({
   const { currentUser, logout } = useApp();
   const isAdmin = currentUser?.role === "admin";
   const { canInstall, isInstalled, triggerInstall } = useInstallPrompt();
+  const [logoError, setLogoError] = useState(false);
 
   return (
     <aside
@@ -46,30 +48,42 @@ export default function Sidebar({
       style={{
         background:
           "linear-gradient(180deg, #0a0e1a 0%, #0d1228 50%, #0a0e1a 100%)",
-        borderRight: "1px solid rgba(255,255,255,0.05)",
+        borderRight: "1px solid rgba(255,255,255,0.08)",
       }}
     >
       {/* Branding */}
       <div
-        className="flex items-center gap-3 px-6 py-5"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+        className="flex items-center gap-3 px-5 py-5"
+        style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
       >
+        {/* Logo container: white circular bg, glow, shadow */}
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+          className="flex-shrink-0 flex items-center justify-center"
           style={{
-            background: "linear-gradient(135deg, #1d4ed8, #7c3aed)",
-            boxShadow: "0 0 16px rgba(99,102,241,0.4)",
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            background: "#ffffff",
+            boxShadow:
+              "0 0 0 2px rgba(99,102,241,0.4), 0 0 18px 6px rgba(99,102,241,0.35), 0 4px 16px rgba(0,0,0,0.5)",
+            overflow: "hidden",
           }}
         >
-          <img
-            src="/assets/generated/pb-insurance-icon-192.dim_192x192.png"
-            alt="PB Insurance"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-          />
-          <Shield className="w-5 h-5 text-white" style={{ display: "none" }} />
+          {!logoError ? (
+            <img
+              src="/assets/screenshot_20260405-205518.chrome-019d5e42-283b-7374-b5f8-fe4781c839fe.png"
+              alt="PB Insurance Logo"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+              }}
+              onError={() => setLogoError(true)}
+            />
+          ) : (
+            <Shield className="w-7 h-7 text-indigo-600" />
+          )}
         </div>
         <div>
           <span className="text-white font-black text-sm tracking-tight leading-tight">
@@ -175,7 +189,7 @@ export default function Sidebar({
 
       <div
         className="px-3 py-2"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
       >
         <button
           type="button"
@@ -188,7 +202,7 @@ export default function Sidebar({
 
       <div
         className="px-4 py-4"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
       >
         <div className="flex items-center gap-3 mb-3">
           <div
@@ -221,7 +235,7 @@ export default function Sidebar({
       {/* Sidebar footer */}
       <div
         className="px-4 py-3"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+        style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
       >
         <p className="text-[10px] text-slate-500 text-center leading-tight">
           Powered by Prashant Chandratre

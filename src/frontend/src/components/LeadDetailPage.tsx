@@ -18,10 +18,14 @@ import {
   Eye,
   FileImage,
   Link2,
+  Maximize2,
   MessageCircle,
   Mic,
+  Minimize2,
   UserCheck,
   X,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -108,36 +112,66 @@ function downloadDoc(url: string, label: string) {
   document.body.removeChild(a);
 }
 
-// ─── Document Viewer Modal ────────────────────────────────────────────────────
+// \u2500\u2500\u2500 Document Viewer Modal (Premium, Fullscreen, Zoom) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 interface DocViewerProps {
   docs: { label: string; url: string }[];
   initialIndex: number;
   onClose: () => void;
 }
 
+const ZOOM_STEPS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3];
+
 function DocViewerModal({ docs, initialIndex, onClose }: DocViewerProps) {
   const [current, setCurrent] = useState(initialIndex);
+  const [zoomIndex, setZoomIndex] = useState(2); // default 1x
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const doc = docs[current];
   const total = docs.length;
+  const zoom = ZOOM_STEPS[zoomIndex];
 
-  const goPrev = useCallback(
-    () => setCurrent((i) => (i - 1 + total) % total),
-    [total],
+  const goPrev = useCallback(() => {
+    setCurrent((i) => (i - 1 + total) % total);
+    setZoomIndex(2);
+  }, [total]);
+
+  const goNext = useCallback(() => {
+    setCurrent((i) => (i + 1) % total);
+    setZoomIndex(2);
+  }, [total]);
+
+  const zoomIn = useCallback(
+    () => setZoomIndex((z) => Math.min(z + 1, ZOOM_STEPS.length - 1)),
+    [],
   );
-  const goNext = useCallback(() => setCurrent((i) => (i + 1) % total), [total]);
+  const zoomOut = useCallback(
+    () => setZoomIndex((z) => Math.max(z - 1, 0)),
+    [],
+  );
 
-  // Keyboard navigation + escape to close
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      containerRef.current?.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+    setIsFullscreen(!isFullscreen);
+  };
+
+  // Keyboard navigation
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowLeft") goPrev();
       else if (e.key === "ArrowRight") goNext();
+      else if (e.key === "+" || e.key === "=") zoomIn();
+      else if (e.key === "-") zoomOut();
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [onClose, goPrev, goNext]);
+  }, [onClose, goPrev, goNext, zoomIn, zoomOut]);
 
-  // Prevent body scroll while modal is open
+  // Prevent body scroll
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -147,119 +181,221 @@ function DocViewerModal({ docs, initialIndex, onClose }: DocViewerProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      ref={containerRef}
+      className="fixed inset-0 z-[80] flex items-center justify-center"
       data-ocid="lead.docs.modal"
     >
-      {/* Backdrop */}
+      {/* Dark backdrop */}
       <div
         role="button"
         tabIndex={-1}
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-default"
+        className="absolute inset-0 cursor-default"
+        style={{ background: "rgba(0,0,0,0.92)" }}
         onClick={onClose}
         onKeyDown={(e) => e.key === "Escape" && onClose()}
         aria-label="Close document viewer"
       />
 
-      {/* Panel */}
-      <div className="relative z-10 w-full sm:max-w-lg sm:mx-4 bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden">
+      {/* Viewer panel */}
+      <div
+        className="relative z-10 flex flex-col"
+        style={{
+          width: "min(700px, 97vw)",
+          maxHeight: "96dvh",
+          background: "#111827",
+          border: "1.5px solid rgba(255,255,255,0.14)",
+          borderRadius: 20,
+          boxShadow: "0 32px 80px rgba(0,0,0,0.7)",
+          overflow: "hidden",
+        }}
+      >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100">
+        <div
+          className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
+          style={{ borderBottom: "1px solid rgba(255,255,255,0.10)" }}
+        >
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               Document
             </p>
-            <h2 className="text-base font-bold text-gray-900 truncate">
+            <h2 className="text-base font-bold text-white truncate">
               {doc.label}
             </h2>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
+          {/* Zoom controls */}
+          {!isPdf(doc.url) && (
+            <div
+              className="flex items-center gap-1 px-2 py-1 rounded-lg"
+              style={{
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.10)",
+              }}
+            >
+              <button
+                type="button"
+                onClick={zoomOut}
+                disabled={zoomIndex === 0}
+                className="w-7 h-7 flex items-center justify-center rounded text-white disabled:opacity-30 hover:bg-white/10 transition-colors"
+                title="Zoom Out (-)"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-xs font-bold text-white min-w-[36px] text-center">
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={zoomIn}
+                disabled={zoomIndex === ZOOM_STEPS.length - 1}
+                className="w-7 h-7 flex items-center justify-center rounded text-white disabled:opacity-30 hover:bg-white/10 transition-colors"
+                title="Zoom In (+)"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          {/* Fullscreen */}
+          <button
+            type="button"
+            onClick={toggleFullscreen}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-4 h-4" />
+            ) : (
+              <Maximize2 className="w-4 h-4" />
+            )}
+          </button>
+          {/* Download */}
+          <button
+            type="button"
             onClick={() => downloadDoc(doc.url, doc.label)}
-            className="w-9 h-9 text-blue-600 hover:bg-blue-50"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
             title={`Download ${doc.label}`}
             data-ocid="lead.docs.modal.download_button"
           >
             <Download className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
+          </button>
+          {/* Close */}
+          <button
+            type="button"
             onClick={onClose}
-            className="w-9 h-9 text-gray-500 hover:bg-gray-100"
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
             aria-label="Close viewer"
             data-ocid="lead.docs.modal.close_button"
           >
             <X className="w-5 h-5" />
-          </Button>
+          </button>
         </div>
 
         {/* Document display */}
-        <div className="flex-1 overflow-hidden bg-gray-950 flex items-center justify-center">
+        <div
+          className="flex-1 overflow-auto flex items-center justify-center"
+          style={{
+            background: "#0d1117",
+            minHeight: 320,
+            maxHeight: "calc(96dvh - 120px)",
+          }}
+        >
           {isPdf(doc.url) ? (
             <iframe
               src={doc.url}
               title={doc.label}
-              className="w-full h-full min-h-[50dvh]"
-              style={{ border: "none" }}
+              className="w-full"
+              style={{
+                border: "none",
+                height: "calc(96dvh - 180px)",
+                minHeight: 320,
+              }}
             />
           ) : (
-            <img
-              src={doc.url}
-              alt={doc.label}
-              className="max-w-full max-h-[65dvh] object-contain"
-            />
+            <div
+              className="flex items-center justify-center p-4"
+              style={{ minWidth: "100%", minHeight: 320 }}
+            >
+              <img
+                src={doc.url}
+                alt={doc.label}
+                style={{
+                  transform: `scale(${zoom})`,
+                  transformOrigin: "center center",
+                  transition: "transform 0.2s ease",
+                  maxWidth: "100%",
+                  imageRendering: "crisp-edges",
+                  display: "block",
+                }}
+              />
+            </div>
           )}
         </div>
 
         {/* Navigation footer */}
         {total > 1 && (
-          <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 bg-white">
-            <Button
-              variant="outline"
-              size="icon"
+          <div
+            className="flex items-center gap-3 px-4 py-3 flex-shrink-0"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.10)" }}
+          >
+            <button
+              type="button"
               onClick={goPrev}
-              className="w-9 h-9 flex-shrink-0"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-white transition-colors"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
               aria-label="Previous document"
               data-ocid="lead.docs.modal.pagination_prev"
             >
               <ChevronLeft className="w-4 h-4" />
-            </Button>
+            </button>
 
             {/* Dot indicators */}
-            <div className="flex-1 flex items-center justify-center gap-1.5">
+            <div className="flex-1 flex items-center justify-center gap-2">
               {docs.map((d, i) => (
                 <button
                   key={d.label}
                   type="button"
-                  onClick={() => setCurrent(i)}
-                  className={`rounded-full transition-all ${
-                    i === current
-                      ? "w-5 h-2 bg-gray-900"
-                      : "w-2 h-2 bg-gray-300 hover:bg-gray-400"
-                  }`}
+                  onClick={() => {
+                    setCurrent(i);
+                    setZoomIndex(2);
+                  }}
+                  className="rounded-full transition-all"
+                  style={{
+                    width: i === current ? 20 : 8,
+                    height: 8,
+                    background:
+                      i === current
+                        ? "linear-gradient(90deg, #3b82f6, #8b5cf6)"
+                        : "rgba(255,255,255,0.25)",
+                  }}
                   aria-label={`View ${d.label}`}
                 />
               ))}
             </div>
 
-            <Button
-              variant="outline"
-              size="icon"
+            <button
+              type="button"
               onClick={goNext}
-              className="w-9 h-9 flex-shrink-0"
+              className="w-9 h-9 flex items-center justify-center rounded-lg text-white transition-colors"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
               aria-label="Next document"
               data-ocid="lead.docs.modal.pagination_next"
             >
               <ChevronRight className="w-4 h-4" />
-            </Button>
+            </button>
           </div>
         )}
 
-        {/* Single doc — count label */}
         {total === 1 && (
-          <div className="px-4 py-2 border-t border-gray-100 bg-white text-center">
-            <p className="text-xs text-gray-400">1 of 1 document</p>
+          <div
+            className="px-4 py-2 text-center flex-shrink-0"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.10)" }}
+          >
+            <p className="text-xs text-slate-400">1 of 1 document</p>
           </div>
         )}
       </div>
@@ -267,7 +403,7 @@ function DocViewerModal({ docs, initialIndex, onClose }: DocViewerProps) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// \u2500\u2500\u2500 Main Component \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
 export default function LeadDetailPage({
   leadId,
   onBack,
@@ -296,7 +432,6 @@ export default function LeadDetailPage({
   // Voice assistant state
   const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
 
-  // Initialize form fields when lead loads or changes
   if (lead && initializedIdRef.current !== lead.id) {
     initializedIdRef.current = lead.id;
     setName(lead.name ?? "");
@@ -384,21 +519,47 @@ export default function LeadDetailPage({
     setViewerOpen(true);
   };
 
+  // Shared section card style (white-on-dark, clear borders)
+  const sectionCard: React.CSSProperties = {
+    background: "rgba(255,255,255,0.04)",
+    border: "1.5px solid rgba(255,255,255,0.12)",
+    borderRadius: 16,
+  };
+  const sectionHeaderStyle: React.CSSProperties = {
+    borderBottom: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.03)",
+    padding: "10px 16px",
+  };
+
   return (
-    <div className="min-h-full bg-background">
+    <div
+      className="min-h-full"
+      style={{ background: "linear-gradient(180deg, #0a0e1a, #0d1228)" }}
+    >
       {/* Header bar */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-xs">
+      <header
+        className="sticky top-0 z-10"
+        style={{
+          background: "rgba(10,14,26,0.97)",
+          backdropFilter: "blur(6px)",
+          borderBottom: "1.5px solid rgba(255,255,255,0.12)",
+        }}
+      >
         <div className="flex items-center gap-3 px-4 py-3 max-w-lg mx-auto">
           <button
             type="button"
             onClick={onBack}
-            className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-gray-100 transition-colors"
+            className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
+            style={{
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.12)",
+            }}
             data-ocid="lead.detail.back_button"
             aria-label="Go back"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
+            <ArrowLeft className="w-5 h-5 text-white" />
           </button>
-          <h1 className="flex-1 text-base font-bold text-gray-900 text-center">
+          <h1 className="flex-1 text-base font-bold text-white text-center">
             Lead Details
           </h1>
           <div className="w-9" />
@@ -408,9 +569,9 @@ export default function LeadDetailPage({
       {/* Content */}
       <div className="px-4 py-5 max-w-lg mx-auto space-y-4 pb-32">
         {/* IDENTITY section */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+        <section style={sectionCard} className="overflow-hidden">
+          <div style={sectionHeaderStyle}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Identity
             </p>
           </div>
@@ -418,7 +579,7 @@ export default function LeadDetailPage({
             <div className="space-y-1.5">
               <Label
                 htmlFor="detail-mobile"
-                className="text-sm font-semibold text-gray-700"
+                className="text-sm font-semibold text-slate-200"
               >
                 Mobile Number
               </Label>
@@ -430,13 +591,13 @@ export default function LeadDetailPage({
                 placeholder="10-digit mobile number"
                 maxLength={10}
                 inputMode="numeric"
-                className="h-11 font-mono text-base"
+                className="h-11 font-mono text-base text-white"
               />
             </div>
             <div className="space-y-1.5">
               <Label
                 htmlFor="detail-name"
-                className="text-sm font-semibold text-gray-700"
+                className="text-sm font-semibold text-slate-200"
               >
                 Name
               </Label>
@@ -446,23 +607,23 @@ export default function LeadDetailPage({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Customer name"
-                className="h-11"
+                className="h-11 text-white"
               />
             </div>
           </div>
         </section>
 
         {/* ASSIGNED AGENT section */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+        <section style={sectionCard} className="overflow-hidden">
+          <div style={sectionHeaderStyle}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Assigned Agent
             </p>
           </div>
           <div className="p-4">
             {isAdmin ? (
               <div className="space-y-1.5">
-                <Label className="text-sm font-semibold text-gray-700">
+                <Label className="text-sm font-semibold text-slate-200">
                   Assign to Agent
                 </Label>
                 <Select value={assignedAgent} onValueChange={setAssignedAgent}>
@@ -482,15 +643,24 @@ export default function LeadDetailPage({
                 </Select>
               </div>
             ) : (
-              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-gray-50 border border-gray-100">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
-                  <UserCheck className="w-4 h-4 text-indigo-600" />
+              <div
+                className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                }}
+              >
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: "rgba(99,102,241,0.25)" }}
+                >
+                  <UserCheck className="w-4 h-4 text-indigo-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-800">
+                  <p className="text-sm font-semibold text-white">
                     {assignedAgentName}
                   </p>
-                  <p className="text-[11px] text-gray-400">{assignedAgent}</p>
+                  <p className="text-[11px] text-slate-400">{assignedAgent}</p>
                 </div>
               </div>
             )}
@@ -498,14 +668,14 @@ export default function LeadDetailPage({
         </section>
 
         {/* STATUS section */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+        <section style={sectionCard} className="overflow-hidden">
+          <div style={sectionHeaderStyle}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Status
             </p>
           </div>
           <div className="p-4">
-            <Label className="text-sm font-semibold text-gray-700 mb-2 block">
+            <Label className="text-sm font-semibold text-slate-200 mb-2 block">
               Workflow Status
             </Label>
             <select
@@ -536,15 +706,15 @@ export default function LeadDetailPage({
         </section>
 
         {/* DETAILS section */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+        <section style={sectionCard} className="overflow-hidden">
+          <div style={sectionHeaderStyle}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Details
             </p>
           </div>
           <div className="p-4 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-gray-700">
+              <Label className="text-sm font-semibold text-slate-200">
                 Claim
               </Label>
               <Select
@@ -566,7 +736,7 @@ export default function LeadDetailPage({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-gray-700">
+              <Label className="text-sm font-semibold text-slate-200">
                 NCB %
               </Label>
               <Select
@@ -590,7 +760,7 @@ export default function LeadDetailPage({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-sm font-semibold text-gray-700">
+              <Label className="text-sm font-semibold text-slate-200">
                 Owner Change
               </Label>
               <Select
@@ -613,11 +783,23 @@ export default function LeadDetailPage({
           </div>
         </section>
 
-        {/* BUSINESS TRACKING section - only for Completed leads */}
+        {/* BUSINESS TRACKING section */}
         {workflowStatus === "Completed" && (
-          <section className="bg-white rounded-xl border border-emerald-200 shadow-xs overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-emerald-100 bg-emerald-50">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">
+          <section
+            className="overflow-hidden"
+            style={{
+              ...sectionCard,
+              border: "1.5px solid rgba(16,185,129,0.35)",
+            }}
+          >
+            <div
+              style={{
+                ...sectionHeaderStyle,
+                background: "rgba(16,185,129,0.08)",
+                borderBottom: "1px solid rgba(16,185,129,0.20)",
+              }}
+            >
+              <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
                 Business Tracking
               </p>
             </div>
@@ -625,9 +807,9 @@ export default function LeadDetailPage({
               <div className="space-y-1.5">
                 <Label
                   htmlFor="detail-policy-amount"
-                  className="text-sm font-semibold text-gray-700"
+                  className="text-sm font-semibold text-slate-200"
                 >
-                  Policy Amount (₹)
+                  Policy Amount (\u20b9)
                 </Label>
                 <Input
                   id="detail-policy-amount"
@@ -637,13 +819,13 @@ export default function LeadDetailPage({
                   value={policyAmount === 0 ? "" : policyAmount}
                   onChange={(e) => setPolicyAmount(Number(e.target.value) || 0)}
                   placeholder="e.g. 15000"
-                  className="h-11"
+                  className="h-11 text-white"
                 />
               </div>
               <div className="space-y-1.5">
                 <Label
                   htmlFor="detail-commission"
-                  className="text-sm font-semibold text-gray-700"
+                  className="text-sm font-semibold text-slate-200"
                 >
                   Commission (%)
                 </Label>
@@ -658,16 +840,22 @@ export default function LeadDetailPage({
                     setCommissionPercent(Number(e.target.value) || 0)
                   }
                   placeholder="e.g. 15"
-                  className="h-11"
+                  className="h-11 text-white"
                 />
               </div>
               {policyAmount > 0 && commissionPercent > 0 && (
-                <div className="flex items-center justify-between px-3 py-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
-                  <span className="text-xs font-semibold text-emerald-700">
+                <div
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl"
+                  style={{
+                    background: "rgba(16,185,129,0.12)",
+                    border: "1.5px solid rgba(16,185,129,0.30)",
+                  }}
+                >
+                  <span className="text-xs font-semibold text-emerald-300">
                     Commission Amount
                   </span>
-                  <span className="text-sm font-bold text-emerald-800">
-                    ₹
+                  <span className="text-sm font-bold text-emerald-200">
+                    \u20b9
                     {Math.round(
                       (policyAmount * commissionPercent) / 100,
                     ).toLocaleString("en-IN")}
@@ -679,9 +867,9 @@ export default function LeadDetailPage({
         )}
 
         {/* PAYMENT LINK section */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+        <section style={sectionCard} className="overflow-hidden">
+          <div style={sectionHeaderStyle}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Payment Link
             </p>
           </div>
@@ -689,7 +877,7 @@ export default function LeadDetailPage({
             <div className="space-y-1.5">
               <Label
                 htmlFor="detail-payment-link"
-                className="text-sm font-semibold text-gray-700"
+                className="text-sm font-semibold text-slate-200"
               >
                 Paste Payment Link
               </Label>
@@ -700,15 +888,21 @@ export default function LeadDetailPage({
                   value={paymentLink}
                   onChange={(e) => setPaymentLink(e.target.value)}
                   placeholder="https://pay.example.com/link..."
-                  className="h-11 flex-1"
+                  className="h-11 flex-1 text-white"
                 />
               </div>
             </div>
 
             {savedLink && (
-              <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-blue-50 border border-blue-100">
-                <Link2 className="w-4 h-4 text-blue-500 flex-shrink-0" />
-                <span className="text-xs font-semibold text-blue-600 flex-shrink-0">
+              <div
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+                style={{
+                  background: "rgba(59,130,246,0.10)",
+                  border: "1.5px solid rgba(59,130,246,0.25)",
+                }}
+              >
+                <Link2 className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                <span className="text-xs font-semibold text-blue-300 flex-shrink-0">
                   Saved:
                 </span>
                 <a
@@ -716,7 +910,7 @@ export default function LeadDetailPage({
                   target="_blank"
                   rel="noopener noreferrer"
                   data-ocid="lead.payment_link.button"
-                  className="text-xs text-blue-700 hover:underline truncate flex-1 min-w-0"
+                  className="text-xs text-blue-300 hover:text-blue-200 hover:underline truncate flex-1 min-w-0"
                   title={savedLink}
                 >
                   {savedLink.length > 38
@@ -727,7 +921,7 @@ export default function LeadDetailPage({
                   href={savedLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-bold text-blue-600 hover:text-blue-800 flex-shrink-0 underline"
+                  className="text-xs font-bold text-blue-400 hover:text-blue-300 flex-shrink-0 underline"
                 >
                   Open
                 </a>
@@ -739,18 +933,25 @@ export default function LeadDetailPage({
         {/* UPLOADED DOCUMENTS section */}
         {docItems.length > 0 && (
           <section
-            className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden"
+            style={sectionCard}
+            className="overflow-hidden"
             data-ocid="lead.docs.section"
           >
-            <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+            <div style={sectionHeaderStyle}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FileImage className="w-3.5 h-3.5 text-blue-500" />
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  <FileImage className="w-3.5 h-3.5 text-blue-400" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                     Uploaded Documents
                   </p>
                 </div>
-                <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                <span
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-blue-300"
+                  style={{
+                    background: "rgba(59,130,246,0.15)",
+                    border: "1px solid rgba(59,130,246,0.25)",
+                  }}
+                >
                   {docItems.length} file{docItems.length !== 1 ? "s" : ""}
                 </span>
               </div>
@@ -760,17 +961,21 @@ export default function LeadDetailPage({
                 {docItems.map((doc, idx) => (
                   <div
                     key={doc.label}
-                    className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-xs hover:shadow-sm transition-shadow"
+                    className="rounded-xl overflow-hidden transition-all hover:scale-[1.02]"
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1.5px solid rgba(255,255,255,0.12)",
+                    }}
                     data-ocid={`lead.docs.item.${idx + 1}`}
                   >
                     {/* Label */}
                     <div className="px-2.5 pt-2.5 pb-1">
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide truncate">
+                      <p className="text-[10px] font-bold text-slate-300 uppercase tracking-wide truncate">
                         {doc.label}
                       </p>
                     </div>
 
-                    {/* Thumbnail — clickable to open viewer */}
+                    {/* Thumbnail */}
                     <button
                       type="button"
                       onClick={() => openViewer(idx)}
@@ -778,13 +983,23 @@ export default function LeadDetailPage({
                       aria-label={`View ${doc.label}`}
                     >
                       {isPdf(doc.url) ? (
-                        <div className="w-full h-24 flex flex-col items-center justify-center bg-red-50 border-y border-gray-100 gap-1">
-                          <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
-                            <span className="text-[9px] font-bold text-red-600 uppercase">
+                        <div
+                          className="w-full h-24 flex flex-col items-center justify-center gap-1"
+                          style={{
+                            background: "rgba(239,68,68,0.10)",
+                            borderTop: "1px solid rgba(255,255,255,0.08)",
+                            borderBottom: "1px solid rgba(255,255,255,0.08)",
+                          }}
+                        >
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center"
+                            style={{ background: "rgba(239,68,68,0.20)" }}
+                          >
+                            <span className="text-[9px] font-bold text-red-400 uppercase">
                               PDF
                             </span>
                           </div>
-                          <span className="text-[10px] text-red-500 font-medium">
+                          <span className="text-[10px] text-red-400 font-medium">
                             PDF Document
                           </span>
                         </div>
@@ -793,10 +1008,15 @@ export default function LeadDetailPage({
                           <img
                             src={doc.url}
                             alt={doc.label}
-                            className="w-full h-24 object-cover border-y border-gray-100"
+                            className="w-full h-24 object-cover"
+                            style={{
+                              borderTop: "1px solid rgba(255,255,255,0.08)",
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              imageRendering: "crisp-edges",
+                            }}
                           />
                           {/* Hover overlay */}
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                             <Eye className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
                           </div>
                         </div>
@@ -805,26 +1025,34 @@ export default function LeadDetailPage({
 
                     {/* Action buttons */}
                     <div className="flex gap-1.5 p-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => openViewer(idx)}
-                        className="flex-1 h-8 text-xs font-semibold gap-1 text-blue-700 border-blue-200 hover:bg-blue-50"
+                        className="flex-1 h-8 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors"
+                        style={{
+                          background: "rgba(59,130,246,0.15)",
+                          border: "1px solid rgba(59,130,246,0.30)",
+                          color: "#93c5fd",
+                        }}
                         data-ocid={`lead.docs.view_button.${idx + 1}`}
                       >
                         <Eye className="w-3.5 h-3.5" />
                         View
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => downloadDoc(doc.url, doc.label)}
-                        className="flex-1 h-8 text-xs font-semibold gap-1 text-gray-700 border-gray-200 hover:bg-gray-50"
+                        className="flex-1 h-8 text-xs font-semibold rounded-lg flex items-center justify-center gap-1 transition-colors"
+                        style={{
+                          background: "rgba(255,255,255,0.07)",
+                          border: "1px solid rgba(255,255,255,0.12)",
+                          color: "#cbd5e1",
+                        }}
                         data-ocid={`lead.docs.download_button.${idx + 1}`}
                       >
                         <Download className="w-3.5 h-3.5" />
                         Save
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -834,24 +1062,28 @@ export default function LeadDetailPage({
         )}
 
         {/* ACTIONS section */}
-        <section className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+        <section style={sectionCard} className="overflow-hidden">
+          <div style={sectionHeaderStyle}>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
               Quick Actions
             </p>
           </div>
           <div className="p-4 space-y-3">
             {isFollowUpDue && (
               <div
-                className="flex items-start gap-3 px-3 py-3 rounded-xl bg-amber-50 border border-amber-200"
+                className="flex items-start gap-3 px-3 py-3 rounded-xl"
+                style={{
+                  background: "rgba(245,158,11,0.10)",
+                  border: "1.5px solid rgba(245,158,11,0.30)",
+                }}
                 data-ocid="lead.followup.panel"
               >
-                <Bell className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <Bell className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-amber-800">
+                  <p className="text-xs font-semibold text-amber-300">
                     Follow-up due
                   </p>
-                  <p className="text-xs text-amber-600 mt-0.5">
+                  <p className="text-xs text-amber-400 mt-0.5">
                     {reminderCount > 0
                       ? `Reminder sent ${reminderCount} time(s)`
                       : "No reminder sent yet"}
@@ -862,18 +1094,26 @@ export default function LeadDetailPage({
                   onClick={handleFollowUpClick}
                   disabled={!followUpUrl}
                   data-ocid="lead.followup.button"
-                  className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold transition-colors"
+                  className="flex-shrink-0 px-3 py-1.5 rounded-lg text-white text-xs font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    background: "linear-gradient(135deg, #d97706, #b45309)",
+                  }}
                 >
                   Send Follow-up
                 </button>
               </div>
             )}
 
-            {/* Voice Assistant button — placed before PB Portal */}
+            {/* Voice Assistant button */}
             <button
               type="button"
               onClick={() => setShowVoiceAssistant(true)}
-              className="flex items-center justify-center gap-2 w-full h-11 px-4 rounded-lg border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-bold transition-colors"
+              className="flex items-center justify-center gap-2 w-full h-11 px-4 rounded-xl text-sm font-bold transition-all"
+              style={{
+                background: "rgba(99,102,241,0.15)",
+                border: "1.5px solid rgba(99,102,241,0.35)",
+                color: "#a5b4fc",
+              }}
               data-ocid="lead.detail.voice_assistant.button"
             >
               <Mic className="w-4 h-4" />
@@ -885,17 +1125,29 @@ export default function LeadDetailPage({
               target="_blank"
               rel="noopener noreferrer"
               data-ocid="lead.detail.pb_portal.button"
-              className="flex items-center justify-center gap-2 w-full h-11 px-4 rounded-lg border-2 border-blue-200 bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-bold transition-colors"
+              className="flex items-center justify-center gap-2 w-full h-11 px-4 rounded-xl text-sm font-bold transition-all"
+              style={{
+                background: "rgba(59,130,246,0.15)",
+                border: "1.5px solid rgba(59,130,246,0.35)",
+                color: "#93c5fd",
+              }}
             >
               <ExternalLink className="w-4 h-4" />
               Open PB Portal
             </a>
 
             <div className="space-y-1">
-              <p className="text-[11px] text-gray-400 font-medium">
+              <p className="text-[11px] text-slate-400 font-medium">
                 Message Preview
               </p>
-              <div className="bg-green-50 border border-green-200 text-green-900 text-xs px-3 py-2 rounded-lg">
+              <div
+                className="text-xs px-3 py-2.5 rounded-xl leading-relaxed"
+                style={{
+                  background: "rgba(16,185,129,0.08)",
+                  border: "1px solid rgba(16,185,129,0.20)",
+                  color: "#6ee7b7",
+                }}
+              >
                 {previewMessage}
               </div>
             </div>
@@ -906,7 +1158,11 @@ export default function LeadDetailPage({
                 target="_blank"
                 rel="noopener noreferrer"
                 data-ocid="lead.detail.whatsapp.button"
-                className="flex items-center justify-center gap-2 w-full h-11 px-4 rounded-lg bg-green-500 hover:bg-green-600 text-white text-sm font-bold transition-colors"
+                className="flex items-center justify-center gap-2 w-full h-11 px-4 rounded-xl text-white text-sm font-bold transition-all"
+                style={{
+                  background: "linear-gradient(135deg, #16a34a, #15803d)",
+                  boxShadow: "0 0 12px rgba(16,185,129,0.25)",
+                }}
               >
                 <MessageCircle className="w-4 h-4" />
                 WhatsApp Customer
@@ -917,7 +1173,12 @@ export default function LeadDetailPage({
                 disabled
                 data-ocid="lead.detail.whatsapp.button"
                 title="No mobile number saved"
-                className="flex items-center justify-center gap-2 w-full h-11 px-4 rounded-lg bg-green-200 text-green-600 text-sm font-bold cursor-not-allowed opacity-60"
+                className="flex items-center justify-center gap-2 w-full h-11 px-4 rounded-xl text-sm font-bold cursor-not-allowed opacity-50"
+                style={{
+                  background: "rgba(22,163,74,0.15)",
+                  border: "1px solid rgba(22,163,74,0.20)",
+                  color: "#86efac",
+                }}
               >
                 <MessageCircle className="w-4 h-4" />
                 WhatsApp Customer
@@ -926,18 +1187,29 @@ export default function LeadDetailPage({
           </div>
         </section>
 
-        <p className="text-[11px] text-gray-400 text-center">
+        <p className="text-[11px] text-slate-500 text-center">
           Lead ID: {lead.id} \u00b7 Created{" "}
           {new Date(lead.createdAt).toLocaleDateString("en-IN")}
         </p>
       </div>
 
       {/* Sticky Save Button */}
-      <div className="fixed bottom-0 left-0 right-0 z-20 p-4 bg-white/95 backdrop-blur-sm border-t border-gray-200 max-w-lg mx-auto">
+      <div
+        className="fixed bottom-0 left-0 right-0 z-20 p-4"
+        style={{
+          background: "rgba(10,14,26,0.97)",
+          backdropFilter: "blur(6px)",
+          borderTop: "1.5px solid rgba(255,255,255,0.12)",
+        }}
+      >
         <Button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full h-12 text-base font-bold bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-sm"
+          className="w-full max-w-lg mx-auto block h-12 text-base font-bold text-white rounded-xl shadow-sm"
+          style={{
+            background: "linear-gradient(135deg, #3b82f6, #6366f1)",
+            boxShadow: "0 0 20px rgba(99,102,241,0.35)",
+          }}
           data-ocid="lead.detail.save_button"
         >
           {isSaving ? "Saving\u2026" : "Save Changes"}
