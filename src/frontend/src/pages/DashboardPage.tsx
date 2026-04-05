@@ -19,7 +19,6 @@ import { FormErrorBoundary } from "../App";
 import LeadCard from "../components/LeadCard";
 import LeadDetailPage from "../components/LeadDetailPage";
 import NewLeadFullForm from "../components/NewLeadFullForm";
-import PriyaAssistant from "../components/PriyaAssistant";
 import Sidebar from "../components/Sidebar";
 import WhatsAppLeadModal from "../components/WhatsAppLeadModal";
 import { AGENTS, useApp } from "../context/AppContext";
@@ -585,12 +584,6 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                   </div>
                 ))}
               </div>
-
-              {/* ── Priya AI — Inline Unified Chat + Voice Interface ── */}
-              <PriyaAssistant
-                inline
-                onOpenNewLead={() => setShowFullForm(true)}
-              />
 
               {/* ── Agent Performance Dashboard ── */}
               <div

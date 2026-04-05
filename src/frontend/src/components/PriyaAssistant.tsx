@@ -281,6 +281,29 @@ async function callPriyaAI(
     "8. For smart insights, be specific: name the exact leads, amounts, and actions to take.",
     "9. Keep answers motivating and action-oriented.",
     "10. When comparing insurance companies, always mention CSR% and network garage count.",
+    "",
+    "=== CRITICAL BEHAVIOR RULES (HIGHEST PRIORITY) ===",
+    "1. LANGUAGE DETECTION: Always detect whether user writes in Hindi, English, Hinglish, or Marathi. Reply in the EXACT SAME language/mix as the user.",
+    "   - If user writes in Hindi → reply in Hindi",
+    "   - If user writes in English → reply in English",
+    "   - If user writes in Hinglish (mix) → reply in Hinglish",
+    "   - If user writes in Marathi → reply in Marathi",
+    "",
+    "2. SHORT STEP-BY-STEP: Never give all information at once. Give one step at a time.",
+    "   Example:",
+    "   User: 'Bike insurance karna hai'",
+    "   Priya: 'Ji sir 👍 main aapki madad karti hoon\n\nSabse pehle RC copy ya vehicle number share kariye'",
+    "   (Wait for response, then give next step)",
+    "",
+    "3. INSURANCE FILTER: If ANY question is NOT related to motor insurance, vehicle insurance, health insurance, or insurance in general, reply EXACTLY:",
+    "   'Sorry, main sirf motor insurance related help kar sakti hoon 🙏'",
+    "",
+    "4. DASHBOARD QUERIES: When user asks about business/leads/performance, use the real data provided in context.",
+    "   Example response: 'Aaj aapka ₹14,500 business hua hai aur 3 leads pending hain 📊'",
+    "",
+    "5. HUMAN TONE: Speak like a friendly, professional female assistant. Use light emojis. Be warm but concise.",
+    "",
+    "6. CURRENCY: ALWAYS format amounts as ₹14,500 (Indian format with ₹ symbol). NEVER use \\u20B9 unicode escape. NEVER write 'Rs' or 'INR'.",
   ].join("\n");
 
   const recentHistory = conversationHistory.slice(-10);
@@ -772,17 +795,29 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
         </div>
       )}
       <div
-        className={`max-w-[78%] rounded-2xl px-3 py-2 shadow-sm ${
+        className="max-w-[78%] rounded-2xl px-3 py-2 shadow-sm"
+        style={
           isUser
-            ? "bg-[#DCF8C6] rounded-br-sm"
-            : "bg-white rounded-bl-sm border border-gray-100"
-        }`}
+            ? {
+                background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                borderBottomRightRadius: 4,
+              }
+            : {
+                background: "rgba(255,255,255,0.09)",
+                border: "1px solid rgba(139,92,246,0.25)",
+                borderBottomLeftRadius: 4,
+              }
+        }
       >
-        <p className="text-[13px] text-gray-800 leading-snug break-words whitespace-pre-line">
+        <p
+          className="text-[13px] leading-snug break-words whitespace-pre-line"
+          style={{ color: "#e2e8f0" }}
+        >
           {msg.text}
         </p>
         <p
-          className={`text-[10px] mt-1 text-gray-400 ${isUser ? "text-right" : ""}`}
+          className={`text-[10px] mt-1 ${isUser ? "text-right" : ""}`}
+          style={{ color: "rgba(255,255,255,0.45)" }}
         >
           {msg.time}
         </p>
@@ -879,14 +914,14 @@ function ChatBody({
               <p className="text-white font-bold text-sm leading-tight">
                 Priya AI
               </p>
-              <p className="text-purple-200 text-[11px]">
+              <p className="text-purple-200 text-[11px] font-medium">
                 {voiceState === "listening"
-                  ? "\ud83d\udd34 Listening..."
+                  ? "🔴 Listening..."
                   : voiceState === "processing"
-                    ? "\ud83d\udfe1 Processing..."
+                    ? "🟡 Processing..."
                     : voiceState === "speaking"
-                      ? "\ud83d\udfe2 Speaking..."
-                      : "Insurance Assistant \u2022 Active \ud83d\udfe2"}
+                      ? "🟢 Speaking..."
+                      : "🟢 Priya Active"}
               </p>
             </div>
           </div>
@@ -958,7 +993,10 @@ function ChatBody({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 bg-[#1a1040]/60" style={{ minHeight: 0 }}>
+      <ScrollArea
+        className="flex-1"
+        style={{ minHeight: 0, background: "#13142a" }}
+      >
         <div className="p-3 space-y-2">
           <div className="flex justify-center">
             <span className="text-[10px] bg-white/10 text-purple-200 px-2.5 py-0.5 rounded-full font-medium">
@@ -975,7 +1013,13 @@ function ChatBody({
               <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center flex-shrink-0 mr-2 mt-0.5">
                 <span className="text-white text-[10px] font-bold">P</span>
               </div>
-              <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm border border-gray-100">
+              <div
+                className="rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm"
+                style={{
+                  background: "rgba(255,255,255,0.09)",
+                  border: "1px solid rgba(139,92,246,0.25)",
+                }}
+              >
                 <div className="flex gap-1 items-center h-4">
                   <span
                     className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
@@ -1027,8 +1071,8 @@ function ChatBody({
       <div
         className="px-3 py-2.5 flex items-center gap-2 flex-shrink-0"
         style={{
-          background: "rgba(49,46,129,0.40)",
-          borderTop: "1px solid rgba(139,92,246,0.25)",
+          background: "#1E1E2F",
+          borderTop: "1px solid rgba(139,92,246,0.30)",
         }}
       >
         <input
@@ -1049,8 +1093,8 @@ function ChatBody({
           disabled={voiceState === "listening" || voiceState === "speaking"}
           className="flex-1 rounded-full text-sm py-2 px-4 border-0 outline-none min-w-0 font-medium focus:ring-2 focus:ring-purple-400/50 shadow-sm disabled:opacity-60"
           style={{
-            background: "#1e1e3f",
-            color: "#ffffff",
+            background: "#1E1E2F",
+            color: "#FFFFFF",
             caretColor: "#a78bfa",
             border: "1px solid rgba(139,92,246,0.5)",
           }}
