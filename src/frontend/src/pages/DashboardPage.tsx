@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import {
   Award,
+  BarChart3,
   CheckCircle2,
   Clock,
   DollarSign,
@@ -38,6 +39,7 @@ import type { Lead } from "../types";
 
 type Page = "dashboard" | "leads" | "reports" | "settings";
 type DashboardView = "list" | "detail";
+type PerfFilter = "today" | "month";
 
 export default function DashboardPage() {
   const { currentUser, leads, addLead, logout } = useApp();
@@ -46,6 +48,7 @@ export default function DashboardPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [showNewLeadDialog, setShowNewLeadDialog] = useState(false);
   const [newLeadAgent, setNewLeadAgent] = useState(AGENTS[0].email);
+  const [perfFilter, setPerfFilter] = useState<PerfFilter>("month");
 
   const isAdmin = currentUser?.role === "admin";
 
@@ -131,6 +134,80 @@ export default function DashboardPage() {
     }).filter((a) => a.policies > 0 || true); // show all agents
   }, [leads, isAdmin]);
 
+  // Performance filter helper
+  const perfLeads = useMemo(() => {
+    const now = new Date();
+    return leads.filter((lead) => {
+      const createdAt = new Date(lead.createdAt);
+      if (perfFilter === "today") {
+        return createdAt.toDateString() === now.toDateString();
+      }
+      // month
+      return (
+        createdAt.getFullYear() === now.getFullYear() &&
+        createdAt.getMonth() === now.getMonth()
+      );
+    });
+  }, [leads, perfFilter]);
+
+  // Agent performance KPIs
+  const agentPerfKpis = useMemo(() => {
+    if (isAdmin) return null;
+    const myLeads = perfLeads.filter(
+      (l) => l.assignedAgent === currentUser?.email,
+    );
+    const completed = myLeads.filter((l) => l.workflowStatus === "Completed");
+    const totalBusiness = completed.reduce(
+      (sum, l) => sum + (l.policyAmount || 0),
+      0,
+    );
+    const commissionEarned = completed.reduce(
+      (sum, l) =>
+        sum +
+        Math.round(((l.policyAmount || 0) * (l.commissionPercent || 0)) / 100),
+      0,
+    );
+    return {
+      leadsHandled: myLeads.length,
+      completedPolicies: completed.length,
+      totalBusiness,
+      commissionEarned,
+    };
+  }, [perfLeads, currentUser, isAdmin]);
+
+  // Admin agent performance table
+  const adminPerfTable = useMemo(() => {
+    if (!isAdmin) return [];
+    return AGENTS.map((agent) => {
+      const agentLeads = perfLeads.filter(
+        (l) => l.assignedAgent === agent.email,
+      );
+      const completed = agentLeads.filter(
+        (l) => l.workflowStatus === "Completed",
+      );
+      const totalBusiness = completed.reduce(
+        (sum, l) => sum + (l.policyAmount || 0),
+        0,
+      );
+      const commissionEarned = completed.reduce(
+        (sum, l) =>
+          sum +
+          Math.round(
+            ((l.policyAmount || 0) * (l.commissionPercent || 0)) / 100,
+          ),
+        0,
+      );
+      return {
+        name: agent.name,
+        email: agent.email,
+        leadsHandled: agentLeads.length,
+        completedPolicies: completed.length,
+        totalBusiness,
+        commissionEarned,
+      };
+    });
+  }, [perfLeads, isAdmin]);
+
   const handleOpenLead = (lead: Lead) => {
     setSelectedLeadId(lead.id);
     setView("detail");
@@ -200,6 +277,45 @@ export default function DashboardPage() {
       icon: Award,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
+    },
+  ];
+
+  const perfKpiCards = [
+    {
+      label: "Leads Handled",
+      value: agentPerfKpis?.leadsHandled ?? 0,
+      icon: Users,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+      border: "border-blue-100",
+      valueColor: "text-blue-700",
+    },
+    {
+      label: "Completed Policies",
+      value: agentPerfKpis?.completedPolicies ?? 0,
+      icon: CheckCircle2,
+      color: "text-green-600",
+      bg: "bg-green-50",
+      border: "border-green-100",
+      valueColor: "text-green-700",
+    },
+    {
+      label: "Total Business",
+      value: `\u20b9${(agentPerfKpis?.totalBusiness ?? 0).toLocaleString("en-IN")}`,
+      icon: TrendingUp,
+      color: "text-teal-600",
+      bg: "bg-teal-50",
+      border: "border-teal-100",
+      valueColor: "text-teal-700",
+    },
+    {
+      label: "Commission Earned",
+      value: `\u20b9${(agentPerfKpis?.commissionEarned ?? 0).toLocaleString("en-IN")}`,
+      icon: Award,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      border: "border-emerald-100",
+      valueColor: "text-emerald-700",
     },
   ];
 
@@ -354,6 +470,186 @@ export default function DashboardPage() {
                 ))}
               </div>
 
+              {/* ── Agent Performance Dashboard ── */}
+              <div
+                className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden"
+                data-ocid="perf.section"
+              >
+                {/* Section header with filter toggle */}
+                <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4 text-indigo-500" />
+                    <h2 className="text-sm font-bold text-gray-900">
+                      Agent Performance
+                    </h2>
+                  </div>
+                  {/* Filter pill toggle */}
+                  <fieldset
+                    className="flex items-center gap-1 bg-gray-100 rounded-full p-1 border-none m-0"
+                    aria-label="Performance filter"
+                  >
+                    <legend className="sr-only">Performance filter</legend>
+                    <button
+                      type="button"
+                      onClick={() => setPerfFilter("today")}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-150 ${
+                        perfFilter === "today"
+                          ? "bg-gray-900 text-white shadow-sm"
+                          : "text-gray-500 hover:text-gray-800"
+                      }`}
+                      data-ocid="perf.filter.tab"
+                      aria-pressed={perfFilter === "today"}
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPerfFilter("month")}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-150 ${
+                        perfFilter === "month"
+                          ? "bg-gray-900 text-white shadow-sm"
+                          : "text-gray-500 hover:text-gray-800"
+                      }`}
+                      data-ocid="perf.filter.tab"
+                      aria-pressed={perfFilter === "month"}
+                    >
+                      This Month
+                    </button>
+                  </fieldset>
+                </div>
+
+                <div className="p-4">
+                  {/* ── Agent view: 4 KPI cards ── */}
+                  {!isAdmin && agentPerfKpis && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {perfKpiCards.map((card, idx) => (
+                        <div
+                          key={card.label}
+                          className={`rounded-xl border ${card.border} p-3.5 flex flex-col gap-2`}
+                          data-ocid={`perf.card.${idx + 1}`}
+                        >
+                          <div
+                            className={`w-8 h-8 rounded-lg ${card.bg} flex items-center justify-center`}
+                          >
+                            <card.icon className={`w-4 h-4 ${card.color}`} />
+                          </div>
+                          <p
+                            className={`text-xl md:text-2xl font-bold leading-none ${card.valueColor}`}
+                          >
+                            {card.value}
+                          </p>
+                          <span className="text-[11px] text-gray-500 font-medium leading-tight">
+                            {card.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* ── Admin view: per-agent table ── */}
+                  {isAdmin && (
+                    <div className="overflow-x-auto -mx-4 px-4">
+                      <table className="w-full text-sm min-w-[520px]">
+                        <thead>
+                          <tr className="border-b border-gray-100">
+                            <th className="text-left pb-2.5 pt-0 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                              Agent
+                            </th>
+                            <th className="text-center pb-2.5 pt-0 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                              Leads Handled
+                            </th>
+                            <th className="text-center pb-2.5 pt-0 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                              Completed Policies
+                            </th>
+                            <th className="text-right pb-2.5 pt-0 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                              Total Business
+                            </th>
+                            <th className="text-right pb-2.5 pt-0 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                              Commission Earned
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {adminPerfTable.map((agent, idx) => (
+                            <tr
+                              key={agent.email}
+                              className={`border-b border-gray-50 ${
+                                idx % 2 === 0 ? "" : "bg-gray-50/30"
+                              }`}
+                              data-ocid={`perf.row.${idx + 1}`}
+                            >
+                              <td className="py-3">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xs font-bold flex-shrink-0">
+                                    {agent.name.charAt(0)}
+                                  </div>
+                                  <span className="font-medium text-gray-800">
+                                    {agent.name}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3 text-center">
+                                {agent.leadsHandled > 0 ? (
+                                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+                                    {agent.leadsHandled}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-300 text-sm">
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 text-center">
+                                {agent.completedPolicies > 0 ? (
+                                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-bold">
+                                    {agent.completedPolicies}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-300 text-sm">
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 text-right font-mono font-semibold text-gray-800">
+                                {agent.totalBusiness > 0 ? (
+                                  `\u20b9${agent.totalBusiness.toLocaleString("en-IN")}`
+                                ) : (
+                                  <span className="text-gray-300 font-normal">
+                                    —
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 text-right">
+                                {agent.commissionEarned > 0 ? (
+                                  <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold font-mono text-xs border border-emerald-100">
+                                    \u20b9
+                                    {agent.commissionEarned.toLocaleString(
+                                      "en-IN",
+                                    )}
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-300">—</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {adminPerfTable.every((a) => a.leadsHandled === 0) && (
+                        <div
+                          className="text-center py-6"
+                          data-ocid="perf.empty_state"
+                        >
+                          <p className="text-xs text-gray-400">
+                            No leads in this period.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Agent Commission Breakdown (Admin only) */}
               {isAdmin && (
                 <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
@@ -410,7 +706,7 @@ export default function DashboardPage() {
                             </td>
                             <td className="px-4 py-3 text-right font-mono font-semibold text-gray-800">
                               {agent.business > 0 ? (
-                                `₹${agent.business.toLocaleString("en-IN")}`
+                                `\u20b9${agent.business.toLocaleString("en-IN")}`
                               ) : (
                                 <span className="text-gray-300 font-normal">
                                   —

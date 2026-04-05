@@ -1,33 +1,37 @@
 # Insurance Automation System
 
 ## Current State
-- Lead detail panel (Sheet/drawer) opens when clicking a row
-- Detail panel has: Mobile, Name, Claim, NCB%, Owner Change, Payment Link
-- Workflow Status is only editable via a dropdown in the table row
-- "Open PB Portal" button only exists in the top-right header
-- Payment link saves on "Save Changes" click
+The DashboardPage has a stats row (Total Leads, Policies, Pending, Completed, Business, Commission) and, for Admin, a per-agent commission breakdown table. There is no dedicated "Agent Performance Dashboard" section and no time-based filtering (Today / This Month).
 
 ## Requested Changes (Diff)
 
 ### Add
-- Workflow Status dropdown inside the lead detail panel (syncs immediately to context)
-- "Open PB Portal" button inside the lead detail panel (opens https://www.pbpartners.com)
-- Status change toast notification triggered from within the detail panel
+- An "Agent Performance" section on the Dashboard (visible to both Admin and Agent roles).
+  - For Admin: shows all agents in a card/row grid with each agent's metrics.
+  - For Agent: shows their own personal performance metrics.
+- Four KPI metrics per agent/view:
+  1. Leads Handled (total leads assigned to agent)
+  2. Completed Policies (workflowStatus === 'Completed')
+  3. Total Business (sum of policyAmount for completed leads)
+  4. Commission Earned (calculated: policyAmount × commissionPercent / 100)
+- Time filter toggle: "Today" | "This Month" — filters which leads are counted for the four KPIs.
+  - Today: leads where createdAt is today's date.
+  - This Month: leads where createdAt is within the current calendar month.
+  - Default: This Month.
 
 ### Modify
-- Lead detail panel to include the Workflow Status field near the top (after Name/Mobile)
-- Payment Link section: keep existing behavior but ensure it's visually prominent and easy to fill
-- Save Changes button should save all fields including status change
-- Detail panel should read live lead from context (not stale props) so status shows current value
+- DashboardPage.tsx: add performance section with time filter state and filtered stats computation.
+- The existing Agent Commission Breakdown table (admin-only) remains but the new performance section replaces/complements it visually.
 
 ### Remove
-- Nothing removed
+- Nothing removed.
 
 ## Implementation Plan
-1. In `LeadDetailPanel.tsx`:
-   - Add `workflowStatus` state initialized from `lead.workflowStatus`
-   - Add a WorkflowStatus `<select>` dropdown (same styling as LeadTable) near top of form
-   - Add "Open PB Portal" `<a>` button (styled like the header button) above the save/cancel buttons
-   - Include `workflowStatus` in the `updateLead` call in `handleSave`
-   - Also trigger an instant status update (call `updateLead` on status change) so table updates live
-   - Sync from live lead: use `leads.find(l => l.id === lead.id)` inside the component to always read fresh data
+1. Add `perfFilter` state (`'today' | 'month'`) in DashboardPage.
+2. Compute `filteredLeads` based on perfFilter (today = same calendar date, month = same year+month).
+3. For Agent role: compute single-agent KPIs from filteredLeads scoped to currentUser.
+4. For Admin role: compute per-agent KPIs from filteredLeads for each agent in AGENTS array.
+5. Render a new "Agent Performance" card section below the stats grid:
+   - Filter toggle buttons: "Today" / "This Month".
+   - Agent role: 4 KPI metric cards in a 2×2 or 1×4 grid.
+   - Admin role: table or card-grid showing all agents with 4 columns.
