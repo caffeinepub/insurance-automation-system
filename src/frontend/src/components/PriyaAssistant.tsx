@@ -13,7 +13,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useApp } from "../context/AppContext";
 import type { Lead } from "../types";
 
-// ---- Speech Recognition types (not always in TS lib) ----
+// ---- Speech Recognition types ----
 
 interface ISpeechRecognitionEvent {
   results: { [index: number]: { [index: number]: { transcript: string } } };
@@ -23,11 +23,13 @@ interface ISpeechRecognition {
   lang: string;
   interimResults: boolean;
   maxAlternatives: number;
+  continuous: boolean;
   onresult: ((event: ISpeechRecognitionEvent) => void) | null;
   onerror: (() => void) | null;
   onend: (() => void) | null;
   start(): void;
   stop(): void;
+  abort(): void;
 }
 
 interface ISpeechRecognitionConstructor {
@@ -49,6 +51,8 @@ interface ChatMessage {
   sender: "user" | "bot";
   time: string;
 }
+
+type VoiceState = "idle" | "listening" | "processing" | "speaking";
 
 type ConversationState =
   | "idle"
@@ -108,7 +112,6 @@ function generatePriyaReply(
 ): string {
   const msg = userMsg.toLowerCase().trim();
 
-  // Commands
   if (/quotation|quote|quoting/i.test(msg)) {
     setState("collecting_vehicle");
     return "Bilkul! Main quotation mein madad karungi. Pehle aapka vehicle number batayein please.";
@@ -124,7 +127,6 @@ function generatePriyaReply(
     return "Main Priya hoon, aapki insurance assistant! Main yeh kar sakti hoon:\n\n\u2022 Quotation process guide\n\u2022 New lead create karna\n\u2022 Payment process help\n\u2022 NCB, IDV, claim explain karna\n\u2022 Document checklist\n\nKoi bhi command try karein ya seedha poochh lein!";
   }
 
-  // Insurance Q&A keyword checks
   if (/ncb/i.test(msg)) return INSURANCE_QA.ncb;
   if (/idv/i.test(msg)) return INSURANCE_QA.idv;
   if (/claim/i.test(msg)) return INSURANCE_QA.claim;
@@ -136,7 +138,6 @@ function generatePriyaReply(
   if (/\bodp\b/i.test(msg)) return INSURANCE_QA.odp;
   if (/policy/i.test(msg)) return INSURANCE_QA.policy;
 
-  // State machine flows
   if (state === "collecting_vehicle") {
     if (
       /[A-Z]{2}[-\s]?\d{2}[-\s]?[A-Z]{1,2}[-\s]?\d{4}/i.test(msg) ||
@@ -193,7 +194,6 @@ function generatePriyaReply(
     return "Quotation select ho gayi! Ab payment stage: Main payment process mein madad karungi. Payment link generate karein aur customer ko WhatsApp pe bhejein.";
   }
 
-  // Document check triggers
   if (/document|rc|pan|aadhaar|kyc|docs/i.test(msg)) {
     const missingLeads = leads.filter(
       (l) => !l.docsUploaded.rcFront || !l.docsUploaded.rcBack,
@@ -205,18 +205,84 @@ function generatePriyaReply(
     return "Aapke saare active leads mein documents uploaded hain. Koi specific document check karna hai?";
   }
 
-  // Greeting
   if (/^(hi|hello|hey|hii|helo|namaste|namaskar)$/i.test(msg)) {
     return "Namaste! Main Priya hoon. Aaj main aapki kya madad kar sakti hoon? Quotation, lead create, payment ya koi insurance question?";
   }
 
-  // Fallback
   return "Main samajh gayi. Aap insurance process ke baare mein kuch aur poochhna chahte hain? Main NCB, IDV, claim, premium ya quotation ke baare mein bata sakti hoon. Ya koi command use karein.";
+}
+
+// ---- Voice state label ----
+
+function VoiceStateIndicator({ voiceState }: { voiceState: VoiceState }) {
+  if (voiceState === "idle") return null;
+
+  const config = {
+    listening: {
+      label: "Listening...",
+      color: "#ef4444",
+      bg: "rgba(239,68,68,0.15)",
+      border: "rgba(239,68,68,0.40)",
+      pulse: true,
+    },
+    processing: {
+      label: "Processing...",
+      color: "#f59e0b",
+      bg: "rgba(245,158,11,0.15)",
+      border: "rgba(245,158,11,0.40)",
+      pulse: false,
+    },
+    speaking: {
+      label: "Speaking...",
+      color: "#10b981",
+      bg: "rgba(16,185,129,0.15)",
+      border: "rgba(16,185,129,0.40)",
+      pulse: true,
+    },
+  }[voiceState];
+
+  return (
+    <div
+      className="flex items-center gap-2 px-3 py-1.5 rounded-full mx-3 mb-2"
+      style={{
+        background: config.bg,
+        border: `1px solid ${config.border}`,
+      }}
+    >
+      <span
+        className={`w-2 h-2 rounded-full flex-shrink-0 ${config.pulse ? "animate-pulse" : ""}`}
+        style={{ background: config.color }}
+      />
+      <span className="text-xs font-semibold" style={{ color: config.color }}>
+        {config.label}
+      </span>
+      {voiceState === "listening" && <WaveformBars />}
+    </div>
+  );
+}
+
+// Animated waveform bars for listening state
+function WaveformBars() {
+  return (
+    <div className="flex items-center gap-0.5 ml-1">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <span
+          key={i}
+          className="w-0.5 rounded-full bg-red-400"
+          style={{
+            height: `${8 + Math.sin(i * 1.2) * 4}px`,
+            animation: "waveBar 0.8s ease-in-out infinite",
+            animationDelay: `${i * 0.1}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 // ---- usePriyaVoice hook ----
 
-function usePriyaVoice() {
+function usePriyaVoice(onSpeakStart?: () => void, onSpeakEnd?: () => void) {
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
 
@@ -229,6 +295,7 @@ function usePriyaVoice() {
         ) ||
         voices.find((v) => v.lang === "hi-IN") ||
         voices.find((v) => v.lang.startsWith("hi")) ||
+        voices.find((v) => v.lang === "en-IN") ||
         voices[0] ||
         null;
       voiceRef.current = preferred;
@@ -252,10 +319,18 @@ function usePriyaVoice() {
       u.rate = 0.85;
       u.pitch = 1.1;
       if (voiceRef.current) u.voice = voiceRef.current;
-      u.onend = () => onEnd?.();
+      u.onstart = () => onSpeakStart?.();
+      u.onend = () => {
+        onSpeakEnd?.();
+        onEnd?.();
+      };
+      u.onerror = () => {
+        onSpeakEnd?.();
+        onEnd?.();
+      };
       window.speechSynthesis.speak(u);
     },
-    [voiceEnabled],
+    [voiceEnabled, onSpeakStart, onSpeakEnd],
   );
 
   const stopSpeaking = useCallback(() => {
@@ -267,7 +342,11 @@ function usePriyaVoice() {
 
 // ---- usePriyaSpeech hook ----
 
-function usePriyaSpeech(onResult: (text: string) => void) {
+function usePriyaSpeech(
+  onResult: (text: string) => void,
+  onListenStart?: () => void,
+  onListenEnd?: () => void,
+) {
   const [isListening, setIsListening] = useState(false);
   const [micEnabled, setMicEnabled] = useState(true);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
@@ -279,24 +358,37 @@ function usePriyaSpeech(onResult: (text: string) => void) {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
     const recognition = new SR();
-    recognition.lang = "hi-IN";
+    // Use hi for Hindi+English (Hinglish) recognition
+    recognition.lang = "hi";
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
+    recognition.continuous = false;
     recognition.onresult = (event: ISpeechRecognitionEvent) => {
       const transcript = event.results[0][0].transcript;
-      onResultRef.current(transcript);
+      if (transcript.trim()) {
+        onListenEnd?.();
+        onResultRef.current(transcript);
+      }
     };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => {
+      setIsListening(false);
+      onListenEnd?.();
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      onListenEnd?.();
+    };
     recognitionRef.current = recognition;
     recognition.start();
     setIsListening(true);
-  }, [micEnabled]);
+    onListenStart?.();
+  }, [micEnabled, onListenStart, onListenEnd]);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
     setIsListening(false);
-  }, []);
+    onListenEnd?.();
+  }, [onListenEnd]);
 
   return {
     isListening,
@@ -359,6 +451,7 @@ interface ChatBodyProps {
   isListening: boolean;
   micEnabled: boolean;
   voiceEnabled: boolean;
+  voiceState: VoiceState;
   bottomRef: React.RefObject<HTMLDivElement | null>;
   inputRef: React.RefObject<HTMLInputElement | null>;
   onInputChange: (v: string) => void;
@@ -380,6 +473,7 @@ function ChatBody({
   isListening,
   micEnabled,
   voiceEnabled,
+  voiceState,
   bottomRef,
   inputRef,
   onInputChange,
@@ -400,7 +494,25 @@ function ChatBody({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white/40 overflow-hidden flex items-center justify-center flex-shrink-0">
+              <div
+                className="w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: "rgba(255,255,255,0.20)",
+                  borderColor:
+                    voiceState === "speaking"
+                      ? "#10b981"
+                      : voiceState === "listening"
+                        ? "#ef4444"
+                        : "rgba(255,255,255,0.40)",
+                  boxShadow:
+                    voiceState === "speaking"
+                      ? "0 0 12px rgba(16,185,129,0.6)"
+                      : voiceState === "listening"
+                        ? "0 0 12px rgba(239,68,68,0.6)"
+                        : "none",
+                  transition: "border-color 0.3s, box-shadow 0.3s",
+                }}
+              >
                 <img
                   src="/assets/generated/priya-avatar-transparent.dim_200x200.png"
                   alt="Priya"
@@ -419,7 +531,13 @@ function ChatBody({
                 Priya AI
               </p>
               <p className="text-purple-200 text-[11px]">
-                Insurance Assistant • Active 🟢
+                {voiceState === "listening"
+                  ? "\ud83d\udd34 Listening..."
+                  : voiceState === "processing"
+                    ? "\ud83d\udfe1 Processing..."
+                    : voiceState === "speaking"
+                      ? "\ud83d\udfe2 Speaking..."
+                      : "Insurance Assistant \u2022 Active \ud83d\udfe2"}
               </p>
             </div>
           </div>
@@ -531,6 +649,9 @@ function ChatBody({
         </div>
       </ScrollArea>
 
+      {/* Voice state indicator - shown above input area */}
+      {voiceState !== "idle" && <VoiceStateIndicator voiceState={voiceState} />}
+
       {/* Quick reply chips */}
       <div
         className="px-3 pt-2 pb-1 flex gap-2 overflow-x-auto flex-shrink-0"
@@ -544,7 +665,7 @@ function ChatBody({
             key={chip}
             type="button"
             onClick={() => onChipClick(chip)}
-            disabled={isBotTyping}
+            disabled={isBotTyping || voiceState === "listening"}
             className="flex-shrink-0 text-[11px] font-medium text-purple-200 border border-purple-500/40 rounded-full px-2.5 py-1 hover:bg-purple-500/20 disabled:opacity-40 transition-colors whitespace-nowrap"
             data-ocid="priya.tab"
           >
@@ -567,26 +688,44 @@ function ChatBody({
           value={inputText}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Kuch bhi poochein Priya se\u2026"
-          className="flex-1 rounded-full text-sm py-2 px-4 border-0 outline-none min-w-0 text-gray-800 placeholder:text-gray-500 focus:ring-2 focus:ring-purple-400/30 shadow-sm"
+          placeholder={
+            voiceState === "listening"
+              ? "Bol rahe hain..."
+              : voiceState === "processing"
+                ? "Processing..."
+                : voiceState === "speaking"
+                  ? "Priya bol rahi hai..."
+                  : "Kuch bhi poochein Priya se\u2026"
+          }
+          disabled={voiceState === "listening" || voiceState === "speaking"}
+          className="flex-1 rounded-full text-sm py-2 px-4 border-0 outline-none min-w-0 text-gray-800 placeholder:text-gray-500 focus:ring-2 focus:ring-purple-400/30 shadow-sm disabled:opacity-60"
           style={{ background: "rgba(255,255,255,0.95)" }}
           data-ocid="priya.input"
         />
 
+        {/* Mic button — big and prominent for voice-first interaction */}
         <button
           type="button"
           onClick={onMicToggle}
-          disabled={!micEnabled}
-          className={`relative w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+          disabled={
+            !micEnabled ||
+            voiceState === "processing" ||
+            voiceState === "speaking"
+          }
+          className={`relative w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg ${
             isListening
-              ? "bg-red-500 hover:bg-red-600 text-white shadow-lg"
-              : "bg-purple-500/40 hover:bg-purple-500/60 text-purple-200"
+              ? "bg-red-500 hover:bg-red-600 text-white"
+              : "bg-gradient-to-br from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white"
           }`}
-          aria-label={isListening ? "Stop listening" : "Start voice input"}
+          aria-label={isListening ? "Stop listening" : "Tap to speak"}
           data-ocid="priya.upload_button"
         >
+          {/* Outer pulse ring */}
           {isListening && (
-            <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-60" />
+            <>
+              <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-50" />
+              <span className="absolute inset-[-4px] rounded-full border-2 border-red-400 animate-ping opacity-30" />
+            </>
           )}
           {isListening ? (
             <MicOff className="w-4 h-4 relative z-10" />
@@ -598,8 +737,10 @@ function ChatBody({
         <button
           type="button"
           onClick={onSend}
-          disabled={!inputText.trim() || isBotTyping}
-          className="w-9 h-9 flex-shrink-0 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-sm active:scale-95"
+          disabled={
+            !inputText.trim() || isBotTyping || voiceState === "listening"
+          }
+          className="w-10 h-10 flex-shrink-0 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-sm active:scale-95"
           aria-label="Send message"
           data-ocid="priya.submit_button"
         >
@@ -620,8 +761,8 @@ export default function PriyaAssistant({
 }: PriyaAssistantProps) {
   const { leads } = useApp();
   const [open, setOpen] = useState(false);
+  const [voiceState, setVoiceState] = useState<VoiceState>("idle");
 
-  // Sync with external open state (e.g. from dashboard card)
   useEffect(() => {
     if (externalOpen !== undefined) {
       setOpen(externalOpen);
@@ -636,14 +777,26 @@ export default function PriyaAssistant({
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { speak, stopSpeaking, voiceEnabled, setVoiceEnabled } =
-    usePriyaVoice();
+  // Voice state callbacks
+  const handleSpeakStart = useCallback(() => setVoiceState("speaking"), []);
+  const handleSpeakEnd = useCallback(() => setVoiceState("idle"), []);
+  const handleListenStart = useCallback(() => setVoiceState("listening"), []);
+  const handleListenEnd = useCallback(() => {
+    // Only transition to processing if we got a result (handled by onResult)
+    // Otherwise go back to idle
+    setVoiceState((prev) => (prev === "listening" ? "idle" : prev));
+  }, []);
 
-  // Keep processUserMessage in a ref so speech result handler can use it
+  const { speak, stopSpeaking, voiceEnabled, setVoiceEnabled } = usePriyaVoice(
+    handleSpeakStart,
+    handleSpeakEnd,
+  );
+
   const processUserMessageRef = useRef<(text: string) => void>(() => {});
 
   const handleSpeechResult = useCallback((text: string) => {
     if (!text.trim()) return;
+    setVoiceState("processing");
     setInputText(text);
     setTimeout(() => {
       processUserMessageRef.current(text);
@@ -656,19 +809,16 @@ export default function PriyaAssistant({
     stopListening,
     micEnabled,
     setMicEnabled,
-  } = usePriyaSpeech(handleSpeechResult);
+  } = usePriyaSpeech(handleSpeechResult, handleListenStart, handleListenEnd);
 
-  // Scroll to bottom helper
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 50);
   }, []);
 
-  // Determine whether the chat is "active" (inline is always active; popup needs open=true)
   const isActive = inline || open;
 
-  // Welcome greeting: for inline — on mount; for popup — when it opens
   useEffect(() => {
     if (isActive && !greeted) {
       setGreeted(true);
@@ -682,20 +832,20 @@ export default function PriyaAssistant({
       };
       setMessages([greeting]);
       scrollToBottom();
-      speak(
-        "Hello, main Priya hoon. Main aapki insurance assistant hoon. Aapko kis cheez mein madad chahiye?",
-      );
+      setTimeout(() => {
+        speak(
+          "Hello, main Priya hoon. Main aapki insurance assistant hoon. Aapko kis cheez mein madad chahiye?",
+        );
+      }, 500);
     }
   }, [isActive, greeted, speak, scrollToBottom]);
 
-  // Focus input when panel opens (popup only)
   useEffect(() => {
     if (!inline && open) {
       setTimeout(() => inputRef.current?.focus(), 200);
     }
   }, [open, inline]);
 
-  // Scroll on new messages
   useEffect(() => {
     if (isActive && messages.length > 0) {
       scrollToBottom();
@@ -717,6 +867,7 @@ export default function PriyaAssistant({
       setMessages((prev) => [...prev, userMsg]);
       setInputText("");
       setIsBotTyping(true);
+      setVoiceState("processing");
 
       setTimeout(() => {
         const replyText = generatePriyaReply(
@@ -735,6 +886,7 @@ export default function PriyaAssistant({
           };
           setMessages((prev) => [...prev, botMsg]);
           setIsBotTyping(false);
+          setVoiceState("idle");
           speak("Ab main New Lead form open kar rahi hoon. Form fill karein!");
           if (onOpenNewLead) {
             onOpenNewLead();
@@ -760,13 +912,13 @@ export default function PriyaAssistant({
         };
         setMessages((prev) => [...prev, botMsg]);
         setIsBotTyping(false);
+        // Speak will set voiceState to "speaking" via callback
         speak(replyText);
       }, 700);
     },
     [isBotTyping, convState, leads, speak, onOpenNewLead],
   );
 
-  // Keep ref in sync
   processUserMessageRef.current = processUserMessage;
 
   const handleSend = () => {
@@ -789,6 +941,7 @@ export default function PriyaAssistant({
     stopListening();
     setConvState("idle");
     setIsBotTyping(false);
+    setVoiceState("idle");
   };
 
   const handleClose = () => {
@@ -802,6 +955,15 @@ export default function PriyaAssistant({
     onExternalOpenChange?.(true);
   };
 
+  const handleMicToggle = () => {
+    if (isListening) {
+      stopListening();
+      setVoiceState("idle");
+    } else {
+      startListening();
+    }
+  };
+
   const sharedProps: ChatBodyProps = {
     messages,
     isBotTyping,
@@ -809,12 +971,13 @@ export default function PriyaAssistant({
     isListening,
     micEnabled,
     voiceEnabled,
+    voiceState,
     bottomRef,
     inputRef,
     onInputChange: setInputText,
     onKeyDown: handleKeyDown,
     onSend: handleSend,
-    onMicToggle: () => (isListening ? stopListening() : startListening()),
+    onMicToggle: handleMicToggle,
     onChipClick: handleQuickChip,
     onVoiceToggle: () => setVoiceEnabled(!voiceEnabled),
     onMicEnabledToggle: () => {

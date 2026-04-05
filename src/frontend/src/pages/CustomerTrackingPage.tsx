@@ -110,11 +110,28 @@ export default function CustomerTrackingPage({
       <div className="w-full max-w-md">
         {/* Brand header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 mb-4 shadow-lg">
-            <Shield className="w-8 h-8 text-white" />
+          <div
+            className="inline-flex items-center justify-center w-16 h-16 mb-4 overflow-hidden"
+            style={{
+              background: "#ffffff",
+              borderRadius: 14,
+              boxShadow:
+                "0 0 24px rgba(99,102,241,0.5), 0 8px 24px rgba(0,0,0,0.4)",
+            }}
+          >
+            <img
+              src="/assets/generated/pb-logo.png"
+              alt="PB Insurance Logo"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
-            InsureFlow
+            PB Insurance AI
           </h1>
           <p className="text-sm text-slate-400 mt-1">
             Insurance Automation System

@@ -11,6 +11,12 @@
   "lang": "en",
   "icons": [
     {
+      "src": "/assets/generated/pb-logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/assets/generated/pb-insurance-icon-192.dim_192x192.png",
       "sizes": "192x192",
       "type": "image/png",
@@ -23,6 +29,9 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["business", "finance"],
+  "categories": [
+    "business",
+    "finance"
+  ],
   "screenshots": []
 }

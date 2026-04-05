@@ -368,14 +368,27 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
         >
           <div className="flex items-center gap-2.5">
             <div
-              className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0"
+              className="w-9 h-9 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0"
               style={{
                 background: "#ffffff",
+                borderRadius: 8,
                 boxShadow:
                   "0 0 12px rgba(99,102,241,0.5), 0 2px 8px rgba(0,0,0,0.4)",
               }}
             >
-              <Shield className="w-5 h-5 text-indigo-600" />
+              <img
+                src="/assets/generated/pb-logo.png"
+                alt="PB Insurance Logo"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  display: "block",
+                }}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                }}
+              />
             </div>
             <div>
               <span className="text-sm font-bold text-white">
