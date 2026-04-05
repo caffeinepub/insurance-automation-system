@@ -2,7 +2,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import type { backendInterface } from "../backend";
 import { createActorWithConfig } from "../config";
+import { getSecretParameter } from "../utils/urlParams";
 import { useInternetIdentity } from "./useInternetIdentity";
+
+// Extended interface to include the access control initializer that may
+// be present on the actor at runtime even if not in the generated binding.
+interface backendInterfaceWithInit extends backendInterface {
+  _initializeAccessControlWithSecret(secret: string): Promise<void>;
+}
 
 const ACTOR_QUERY_KEY = "actor";
 export function useActor() {
@@ -25,6 +32,10 @@ export function useActor() {
       };
 
       const actor = await createActorWithConfig(actorOptions);
+      const adminToken = getSecretParameter("caffeineAdminToken") || "";
+      await (
+        actor as backendInterfaceWithInit
+      )._initializeAccessControlWithSecret(adminToken);
       return actor;
     },
     // Only refetch when identity changes

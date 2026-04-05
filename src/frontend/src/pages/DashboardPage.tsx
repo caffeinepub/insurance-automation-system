@@ -4,11 +4,10 @@ import {
   BarChart3,
   CheckCircle2,
   Clock,
-  DollarSign,
   ExternalLink,
-  FileText,
   LogOut,
   MessageCircle,
+  Mic,
   Plus,
   Search,
   Shield,
@@ -36,6 +35,13 @@ interface DashboardPageProps {
   onAdminPanel?: () => void;
 }
 
+const glassCard: React.CSSProperties = {
+  backdropFilter: "blur(12px)",
+  WebkitBackdropFilter: "blur(12px)",
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
 export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
   const { currentUser, leads, logout } = useApp();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
@@ -56,7 +62,6 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
     return leads.filter((l) => l.assignedAgent === currentUser?.email);
   }, [leads, currentUser, isAdmin]);
 
-  // Filtered leads (search + status)
   const filteredLeads = useMemo(() => {
     let result = visibleLeads;
     if (statusFilter !== STATUS_ALL) {
@@ -121,7 +126,6 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
     };
   }, [visibleLeads]);
 
-  // Per-agent breakdown (admin only)
   const agentBreakdown = useMemo(() => {
     if (!isAdmin) return [];
     return AGENTS.map((agent) => {
@@ -148,10 +152,9 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
         business,
         commission,
       };
-    }).filter((_a) => true); // show all agents
+    }).filter((_a) => true);
   }, [leads, isAdmin]);
 
-  // Performance filter helper
   const perfLeads = useMemo(() => {
     if (perfFilter === "all") return leads;
     const now = new Date();
@@ -160,7 +163,6 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
       if (perfFilter === "today") {
         return createdAt.toDateString() === now.toDateString();
       }
-      // month
       return (
         createdAt.getFullYear() === now.getFullYear() &&
         createdAt.getMonth() === now.getMonth()
@@ -168,7 +170,6 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
     });
   }, [leads, perfFilter]);
 
-  // Agent performance KPIs
   const agentPerfKpis = useMemo(() => {
     if (isAdmin) return null;
     const myLeads = perfLeads.filter(
@@ -193,7 +194,6 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
     };
   }, [perfLeads, currentUser, isAdmin]);
 
-  // Admin agent performance table
   const adminPerfTable = useMemo(() => {
     if (!isAdmin) return [];
     return AGENTS.map((agent) => {
@@ -240,91 +240,79 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
     setShowFullForm(true);
   };
 
-  const summaryCards = [
+  // Conversion % = completed / total * 100
+  const conversionPct = Math.round(
+    (stats.completed / (stats.totalLeads || 1)) * 100,
+  );
+
+  // Premium KPI cards (4 large cards)
+  const kpiCards = [
     {
       label: "Total Leads",
-      value: stats.totalLeads,
+      value: String(stats.totalLeads),
+      icon: Users,
+      gradientFrom: "#3b82f6",
+      gradientTo: "#22d3ee",
+      accentColor: "rgba(59,130,246,0.3)",
+    },
+    {
+      label: "Business ₹",
+      value: `₹${stats.totalBusiness.toLocaleString("en-IN")}`,
       icon: TrendingUp,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      gradientFrom: "#10b981",
+      gradientTo: "#14b8a6",
+      accentColor: "rgba(16,185,129,0.3)",
     },
     {
-      label: "Policies",
-      value: stats.totalPolicies,
-      icon: FileText,
-      color: "text-purple-600",
-      bg: "bg-purple-50",
-    },
-    {
-      label: "Pending",
-      value: stats.pending,
-      icon: Clock,
-      color: "text-orange-600",
-      bg: "bg-orange-50",
-    },
-    {
-      label: "Completed",
-      value: stats.completed,
-      icon: CheckCircle2,
-      color: "text-green-600",
-      bg: "bg-green-50",
-    },
-    {
-      label: "Business",
-      value: `\u20b9${stats.totalBusiness.toLocaleString("en-IN")}`,
-      icon: DollarSign,
-      color: "text-teal-600",
-      bg: "bg-teal-50",
-    },
-    {
-      label: "Commission",
-      value: `\u20b9${stats.totalCommission.toLocaleString("en-IN")}`,
+      label: "Commission ₹",
+      value: `₹${stats.totalCommission.toLocaleString("en-IN")}`,
       icon: Award,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
+      gradientFrom: "#8b5cf6",
+      gradientTo: "#a855f7",
+      accentColor: "rgba(139,92,246,0.3)",
+    },
+    {
+      label: "Conversion %",
+      value: `${conversionPct}%`,
+      icon: BarChart3,
+      gradientFrom: "#f97316",
+      gradientTo: "#f59e0b",
+      accentColor: "rgba(249,115,22,0.3)",
     },
   ];
 
+  // Agent perf KPI cards
   const perfKpiCards = [
     {
       label: "Leads Handled",
-      value: agentPerfKpis?.leadsHandled ?? 0,
+      value: String(agentPerfKpis?.leadsHandled ?? 0),
       icon: Users,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
-      border: "border-blue-100",
-      valueColor: "text-blue-700",
+      gradientFrom: "#3b82f6",
+      gradientTo: "#22d3ee",
     },
     {
       label: "Completed Policies",
-      value: agentPerfKpis?.completedPolicies ?? 0,
+      value: String(agentPerfKpis?.completedPolicies ?? 0),
       icon: CheckCircle2,
-      color: "text-green-600",
-      bg: "bg-green-50",
-      border: "border-green-100",
-      valueColor: "text-green-700",
+      gradientFrom: "#10b981",
+      gradientTo: "#14b8a6",
     },
     {
       label: "Total Business",
-      value: `\u20b9${(agentPerfKpis?.totalBusiness ?? 0).toLocaleString("en-IN")}`,
+      value: `₹${(agentPerfKpis?.totalBusiness ?? 0).toLocaleString("en-IN")}`,
       icon: TrendingUp,
-      color: "text-teal-600",
-      bg: "bg-teal-50",
-      border: "border-teal-100",
-      valueColor: "text-teal-700",
+      gradientFrom: "#8b5cf6",
+      gradientTo: "#a855f7",
     },
     {
       label: "Commission Earned",
-      value: `\u20b9${(agentPerfKpis?.commissionEarned ?? 0).toLocaleString("en-IN")}`,
+      value: `₹${(agentPerfKpis?.commissionEarned ?? 0).toLocaleString("en-IN")}`,
       icon: Award,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
-      border: "border-emerald-100",
-      valueColor: "text-emerald-700",
+      gradientFrom: "#f97316",
+      gradientTo: "#f59e0b",
     },
   ];
 
-  // Status filter counts
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { All: visibleLeads.length };
     for (const s of WORKFLOW_STATUSES) {
@@ -336,7 +324,10 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
   // Detail view
   if (view === "detail" && selectedLeadId) {
     return (
-      <div className="flex h-screen bg-background overflow-hidden">
+      <div
+        className="flex h-screen overflow-hidden"
+        style={{ background: "transparent" }}
+      >
         <div className="hidden md:block">
           <Sidebar
             currentPage={currentPage}
@@ -351,9 +342,11 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
     );
   }
 
-  // List view
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div
+      className="flex h-screen overflow-hidden"
+      style={{ background: "transparent" }}
+    >
       <div className="hidden md:block">
         <Sidebar
           currentPage={currentPage}
@@ -363,14 +356,27 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
       </div>
 
       <div className="flex-1 md:ml-[240px] flex flex-col overflow-hidden">
-        {/* Mobile top nav bar */}
-        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-xs flex-shrink-0">
+        {/* Mobile top nav bar - dark glass */}
+        <header
+          className="md:hidden flex items-center justify-between px-4 py-3 flex-shrink-0"
+          style={{
+            background: "rgba(0,0,0,0.3)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{
+                background: "linear-gradient(135deg, #1d4ed8, #7c3aed)",
+              }}
+            >
               <Shield className="w-4 h-4 text-white" />
             </div>
             <div>
-              <span className="text-sm font-bold text-gray-900">
+              <span className="text-sm font-bold text-white">
                 PB Insurance AI
               </span>
             </div>
@@ -380,7 +386,10 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
               href="https://www.pbpartners.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors"
+              style={{
+                background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+              }}
               data-ocid="header.pb_portal.button"
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -389,7 +398,8 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
             <button
               type="button"
               onClick={logout}
-              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+              style={{ background: "rgba(255,255,255,0.08)" }}
               data-ocid="mobile.logout.button"
               aria-label="Logout"
             >
@@ -402,18 +412,24 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
           {currentPage !== "dashboard" && currentPage !== "leads" ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-center p-8">
-                <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                  <Clock className="w-8 h-8 text-gray-400" />
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={glassCard}
+                >
+                  <Clock className="w-8 h-8 text-slate-400" />
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                <h2 className="text-xl font-semibold text-white mb-2">
                   Coming Soon
                 </h2>
-                <p className="text-gray-500 text-sm">
+                <p className="text-slate-400 text-sm">
                   This feature is under development.
                 </p>
                 <Button
                   onClick={() => setCurrentPage("dashboard")}
-                  className="mt-4 bg-gray-900 hover:bg-gray-800 text-white"
+                  className="mt-4 text-white"
+                  style={{
+                    background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                  }}
                 >
                   Back to Dashboard
                 </Button>
@@ -421,16 +437,16 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
             </div>
           ) : (
             <div className="p-4 md:p-6 space-y-4 md:space-y-6">
-              {/* Desktop page header */}
+              {/* ── Desktop page header ── */}
               <div className="hidden md:flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-0.5">
-                    {isAdmin ? "Admin Dashboard" : "Agent Dashboard"}
+                  <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-0.5">
+                    AI Insurance Trainer 🚀
                   </p>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    Good day, {currentUser?.name}! &#128075;
+                  <h1 className="text-2xl font-black text-white">
+                    Welcome back! Priya is ready to help you close more deals 💰
                   </h1>
-                  <p className="text-sm text-gray-500 mt-0.5">
+                  <p className="text-sm text-slate-400 mt-0.5">
                     {isAdmin
                       ? "Viewing all leads across all agents."
                       : "Viewing your assigned leads."}
@@ -441,21 +457,33 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                     href="https://www.pbpartners.com"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-xs"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all"
+                    style={{
+                      background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                      boxShadow: "0 0 15px rgba(99,102,241,0.35)",
+                    }}
                     data-ocid="header.pb_portal.button"
                   >
                     <ExternalLink className="w-4 h-4" />
                     Open PB Portal
                   </a>
-                  <div className="flex items-center gap-2.5 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-xs">
-                    <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                  <div
+                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
+                    style={glassCard}
+                  >
+                    <div
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                      style={{
+                        background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                      }}
+                    >
                       {currentUser?.name.charAt(0)}
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-gray-900">
+                      <p className="text-xs font-semibold text-white">
                         {currentUser?.name}
                       </p>
-                      <p className="text-[10px] text-gray-400 capitalize">
+                      <p className="text-[10px] text-slate-400 capitalize">
                         {currentUser?.role}
                       </p>
                     </div>
@@ -465,62 +493,200 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
 
               {/* Mobile greeting */}
               <div className="md:hidden">
-                <h1 className="text-lg font-bold text-gray-900">
-                  Hi, {currentUser?.name?.split(" ")[0]}! &#128075;
+                <h1 className="text-lg font-black text-white">
+                  Hi, {currentUser?.name?.split(" ")[0]}! 👋
                 </h1>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-400">
                   {isAdmin ? "All leads" : "Your leads"}
                 </p>
               </div>
 
-              {/* Stats grid */}
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-2.5 md:gap-4">
-                {summaryCards.map((card, i) => (
+              {/* ── Premium KPI Cards (4 large cards) ── */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+                {kpiCards.map((card, i) => (
                   <div
                     key={card.label}
-                    className="bg-white rounded-xl border border-gray-200 shadow-xs p-3 md:p-4 flex flex-col gap-1.5"
+                    className="rounded-2xl p-5 md:p-6 shadow-xl relative overflow-hidden"
+                    style={{
+                      backdropFilter: "blur(16px)",
+                      WebkitBackdropFilter: "blur(16px)",
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.09)",
+                    }}
                     data-ocid={`dashboard.card.${i + 1}`}
                   >
+                    {/* Ambient glow */}
                     <div
-                      className={`w-7 h-7 rounded-lg ${card.bg} flex items-center justify-center`}
+                      className="absolute top-0 right-0 w-24 h-24 rounded-full pointer-events-none"
+                      style={{
+                        background: `radial-gradient(circle, ${card.accentColor} 0%, transparent 70%)`,
+                        filter: "blur(15px)",
+                        transform: "translate(30%, -30%)",
+                      }}
+                    />
+                    {/* Icon */}
+                    <div
+                      className="w-12 h-12 md:w-14 md:h-14 rounded-xl flex items-center justify-center mb-4 shadow-lg"
+                      style={{
+                        background: `linear-gradient(135deg, ${card.gradientFrom}, ${card.gradientTo})`,
+                        boxShadow: `0 4px 16px ${card.accentColor}`,
+                      }}
                     >
-                      <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+                      <card.icon className="w-6 h-6 md:w-7 md:h-7 text-white" />
                     </div>
-                    <p className="text-lg md:text-2xl font-bold text-gray-900 leading-none">
+                    {/* Value */}
+                    <p
+                      className="text-2xl md:text-4xl font-black text-white leading-none mb-1.5"
+                      style={{ textShadow: "0 2px 8px rgba(0,0,0,0.3)" }}
+                    >
                       {card.value}
                     </p>
-                    <span className="text-[10px] md:text-xs text-gray-500 font-medium">
+                    {/* Label */}
+                    <p className="text-xs md:text-sm font-medium text-slate-400">
                       {card.label}
-                    </span>
+                    </p>
+                    {/* Bottom accent line */}
+                    <div
+                      className="absolute bottom-0 left-0 right-0 h-0.5"
+                      style={{
+                        background: `linear-gradient(90deg, ${card.gradientFrom}60, ${card.gradientTo}60)`,
+                      }}
+                    />
                   </div>
                 ))}
               </div>
 
+              {/* ── Priya AI Assistant Card ── */}
+              <div
+                className="rounded-2xl p-5 shadow-xl"
+                style={{
+                  backdropFilter: "blur(16px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  background:
+                    "linear-gradient(135deg, rgba(88,28,135,0.30), rgba(49,46,129,0.30))",
+                  border: "1px solid rgba(139,92,246,0.30)",
+                  boxShadow: "0 8px 32px rgba(139,92,246,0.15)",
+                }}
+              >
+                <div className="flex items-center gap-4">
+                  {/* Avatar with pulse ring */}
+                  <div className="relative flex-shrink-0">
+                    <div
+                      className="absolute inset-0 rounded-full animate-pulse-glow"
+                      style={{ borderRadius: "50%" }}
+                    />
+                    <div
+                      className="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl font-black relative z-10"
+                      style={{
+                        background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                        boxShadow: "0 0 20px rgba(139,92,246,0.5)",
+                      }}
+                    >
+                      P
+                    </div>
+                    {/* Green status dot */}
+                    <div
+                      className="absolute bottom-0 right-0 w-4 h-4 rounded-full z-20 animate-status-pulse"
+                      style={{
+                        background: "#22c55e",
+                        border: "2px solid #0a0e1a",
+                        boxShadow: "0 0 8px rgba(34,197,94,0.6)",
+                      }}
+                    />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base font-bold text-white">
+                      Priya AI Assistant
+                    </h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <div className="w-2 h-2 rounded-full bg-green-400 animate-status-pulse" />
+                      <span className="text-sm font-semibold text-green-400">
+                        Active
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Voice-enabled • Hindi + English • Always Ready
+                    </p>
+                  </div>
+
+                  {/* Right: glowing mic + button */}
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{
+                        background: "rgba(139,92,246,0.20)",
+                        border: "1px solid rgba(139,92,246,0.40)",
+                      }}
+                    >
+                      <Mic
+                        className="w-5 h-5 text-purple-400"
+                        style={{
+                          filter: "drop-shadow(0 0 6px rgba(139,92,246,0.7))",
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {}}
+                      className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all"
+                      style={{
+                        background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                        boxShadow: "0 0 16px rgba(139,92,246,0.40)",
+                      }}
+                      data-ocid="priya.talk.button"
+                    >
+                      <Mic className="w-4 h-4" />
+                      Talk to Priya
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* ── Agent Performance Dashboard ── */}
               <div
-                className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden"
+                className="rounded-2xl overflow-hidden shadow-xl"
+                style={{
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
                 data-ocid="perf.section"
               >
-                {/* Section header with filter toggle */}
-                <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
+                {/* Section header */}
+                <div
+                  className="flex items-center justify-between px-4 py-3.5"
+                  style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                >
                   <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-indigo-500" />
-                    <h2 className="text-sm font-bold text-gray-900">
+                    <BarChart3 className="w-4 h-4 text-indigo-400" />
+                    <h2 className="text-sm font-bold text-white">
                       Agent Performance
                     </h2>
                   </div>
-                  {/* Filter pill toggle */}
-                  <div className="flex bg-gray-100 rounded-lg p-0.5">
+                  {/* Filter toggle */}
+                  <div
+                    className="flex rounded-lg p-0.5"
+                    style={{ background: "rgba(255,255,255,0.06)" }}
+                  >
                     {(["today", "month", "all"] as PerfFilter[]).map((f) => (
                       <button
                         key={f}
                         type="button"
                         onClick={() => setPerfFilter(f)}
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold capitalize transition-colors ${
+                        className="px-2.5 py-1 rounded-md text-[11px] font-semibold capitalize transition-all"
+                        style={
                           perfFilter === f
-                            ? "bg-white shadow-xs text-gray-900"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
+                            ? {
+                                background:
+                                  "linear-gradient(135deg, #3b82f6, #8b5cf6)",
+                                color: "#fff",
+                                boxShadow: "0 2px 8px rgba(99,102,241,0.3)",
+                              }
+                            : { color: "#94a3b8" }
+                        }
                         data-ocid={`perf.filter.${f}.tab`}
                       >
                         {f === "month"
@@ -539,17 +705,24 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                     {perfKpiCards.map((card) => (
                       <div
                         key={card.label}
-                        className={`rounded-xl border ${card.border} ${card.bg} p-3 space-y-1.5`}
+                        className="rounded-xl p-3 space-y-2"
+                        style={{
+                          background: "rgba(255,255,255,0.04)",
+                          border: "1px solid rgba(255,255,255,0.07)",
+                        }}
                       >
-                        <div className="w-7 h-7 rounded-lg bg-white/80 flex items-center justify-center">
-                          <card.icon className={`w-4 h-4 ${card.color}`} />
-                        </div>
-                        <p
-                          className={`text-base font-bold ${card.valueColor} leading-tight`}
+                        <div
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{
+                            background: `linear-gradient(135deg, ${card.gradientFrom}, ${card.gradientTo})`,
+                          }}
                         >
+                          <card.icon className="w-4 h-4 text-white" />
+                        </div>
+                        <p className="text-base font-black text-white leading-tight">
                           {card.value}
                         </p>
-                        <p className="text-[10px] text-gray-500 font-medium">
+                        <p className="text-[10px] text-slate-400 font-medium">
                           {card.label}
                         </p>
                       </div>
@@ -562,20 +735,25 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[400px]">
                       <thead>
-                        <tr className="border-b border-gray-100 bg-gray-50/60">
-                          <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                        <tr
+                          style={{
+                            borderBottom: "1px solid rgba(255,255,255,0.06)",
+                            background: "rgba(255,255,255,0.02)",
+                          }}
+                        >
+                          <th className="px-4 py-2.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wide">
                             Agent
                           </th>
-                          <th className="px-4 py-2.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wide">
                             Leads
                           </th>
-                          <th className="px-4 py-2.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 text-center text-[11px] font-bold text-slate-500 uppercase tracking-wide">
                             Policies
                           </th>
-                          <th className="px-4 py-2.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 text-right text-[11px] font-bold text-slate-500 uppercase tracking-wide">
                             Business
                           </th>
-                          <th className="px-4 py-2.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 text-right text-[11px] font-bold text-slate-500 uppercase tracking-wide">
                             Commission
                           </th>
                         </tr>
@@ -584,20 +762,32 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                         {adminPerfTable.map((agent, idx) => (
                           <tr
                             key={agent.email}
-                            className={`border-b border-gray-50 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}
+                            style={{
+                              borderBottom: "1px solid rgba(255,255,255,0.04)",
+                              background:
+                                idx % 2 === 0
+                                  ? "transparent"
+                                  : "rgba(255,255,255,0.02)",
+                            }}
                           >
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xs font-bold flex-shrink-0">
+                                <div
+                                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                                  style={{
+                                    background:
+                                      "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                                  }}
+                                >
                                   {agent.name.charAt(0)}
                                 </div>
-                                <span className="font-medium text-gray-800 text-sm">
+                                <span className="font-medium text-slate-200 text-sm">
                                   {agent.name}
                                 </span>
                               </div>
                             </td>
                             <td className="px-4 py-3 text-center">
-                              <span className="text-xs font-bold text-gray-700">
+                              <span className="text-xs font-bold text-slate-300">
                                 {agent.leadsHandled}
                               </span>
                             </td>
@@ -605,43 +795,58 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                               <span
                                 className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
                                   agent.completedPolicies > 0
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-gray-100 text-gray-400"
+                                    ? "text-green-300"
+                                    : "text-slate-500"
                                 }`}
+                                style={{
+                                  background:
+                                    agent.completedPolicies > 0
+                                      ? "rgba(16,185,129,0.20)"
+                                      : "rgba(255,255,255,0.05)",
+                                }}
                               >
                                 {agent.completedPolicies}
                               </span>
                             </td>
-                            <td className="px-4 py-3 text-right font-mono font-semibold text-gray-800">
+                            <td className="px-4 py-3 text-right font-mono font-semibold text-slate-200">
                               {agent.totalBusiness > 0 ? (
-                                `\u20b9${agent.totalBusiness.toLocaleString("en-IN")}`
+                                `₹${agent.totalBusiness.toLocaleString("en-IN")}`
                               ) : (
-                                <span className="text-gray-300 font-normal">
-                                  &#8212;
-                                </span>
+                                <span className="text-slate-600">—</span>
                               )}
                             </td>
                             <td className="px-4 py-3 text-right">
                               {agent.commissionEarned > 0 ? (
-                                <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold font-mono text-xs border border-emerald-100">
-                                  &#8377;
+                                <span
+                                  className="inline-block px-2 py-0.5 rounded-md font-bold font-mono text-xs text-emerald-300"
+                                  style={{
+                                    background: "rgba(16,185,129,0.15)",
+                                    border: "1px solid rgba(16,185,129,0.25)",
+                                  }}
+                                >
+                                  ₹
                                   {agent.commissionEarned.toLocaleString(
                                     "en-IN",
                                   )}
                                 </span>
                               ) : (
-                                <span className="text-gray-300">&#8212;</span>
+                                <span className="text-slate-600">—</span>
                               )}
                             </td>
                           </tr>
                         ))}
                         {/* Totals row */}
-                        <tr className="bg-gray-50 border-t-2 border-gray-200">
-                          <td className="px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">
+                        <tr
+                          style={{
+                            borderTop: "2px solid rgba(255,255,255,0.10)",
+                            background: "rgba(255,255,255,0.03)",
+                          }}
+                        >
+                          <td className="px-4 py-3 text-xs font-bold text-slate-400 uppercase tracking-wide">
                             Total
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className="text-xs font-bold text-gray-700">
+                            <span className="text-xs font-bold text-slate-300">
                               {adminPerfTable.reduce(
                                 (s, a) => s + a.leadsHandled,
                                 0,
@@ -649,22 +854,28 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className="text-xs font-bold text-gray-700">
+                            <span className="text-xs font-bold text-slate-300">
                               {agentBreakdown.reduce(
                                 (s, a) => s + a.policies,
                                 0,
                               )}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-right font-mono font-bold text-gray-900">
-                            &#8377;
+                          <td className="px-4 py-3 text-right font-mono font-bold text-white">
+                            ₹
                             {agentBreakdown
                               .reduce((s, a) => s + a.business, 0)
                               .toLocaleString("en-IN")}
                           </td>
                           <td className="px-4 py-3 text-right">
-                            <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold font-mono text-xs border border-emerald-200">
-                              &#8377;
+                            <span
+                              className="inline-block px-2 py-0.5 rounded-md font-bold font-mono text-xs text-emerald-300"
+                              style={{
+                                background: "rgba(16,185,129,0.20)",
+                                border: "1px solid rgba(16,185,129,0.35)",
+                              }}
+                            >
+                              ₹
                               {agentBreakdown
                                 .reduce((s, a) => s + a.commission, 0)
                                 .toLocaleString("en-IN")}
@@ -677,13 +888,24 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                 )}
               </div>
 
-              {/* Lead List */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xs">
-                <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
+              {/* ── Lead List ── */}
+              <div
+                className="rounded-2xl shadow-xl overflow-hidden"
+                style={{
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                }}
+              >
+                <div
+                  className="flex items-center justify-between px-4 py-3.5"
+                  style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
+                >
                   <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-gray-400" />
-                    <h2 className="text-sm font-bold text-gray-900">Leads</h2>
-                    <span className="text-xs text-gray-400 font-medium">
+                    <Users className="w-4 h-4 text-slate-400" />
+                    <h2 className="text-sm font-bold text-white">Leads</h2>
+                    <span className="text-xs text-slate-500 font-medium">
                       ({filteredLeads.length}
                       {filteredLeads.length !== visibleLeads.length
                         ? `/${visibleLeads.length}`
@@ -691,7 +913,13 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                       )
                     </span>
                     {isAdmin && (
-                      <span className="text-[10px] bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded-full border border-blue-100">
+                      <span
+                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-blue-300"
+                        style={{
+                          background: "rgba(59,130,246,0.15)",
+                          border: "1px solid rgba(59,130,246,0.25)",
+                        }}
+                      >
                         All Agents
                       </span>
                     )}
@@ -700,7 +928,11 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                     <Button
                       onClick={() => setShowWhatsAppModal(true)}
                       variant="outline"
-                      className="text-xs h-8 px-3 flex items-center gap-1.5 rounded-lg border-green-300 text-green-700 hover:bg-green-50"
+                      className="text-xs h-8 px-3 flex items-center gap-1.5 rounded-xl border-0 text-white font-semibold"
+                      style={{
+                        background: "linear-gradient(135deg, #16a34a, #059669)",
+                        boxShadow: "0 0 12px rgba(16,185,129,0.25)",
+                      }}
                       data-ocid="leads.whatsapp_create.button"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
@@ -708,7 +940,11 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                     </Button>
                     <Button
                       onClick={handleAddLead}
-                      className="bg-gray-900 hover:bg-gray-800 text-white text-xs h-8 px-3 flex items-center gap-1.5 rounded-lg"
+                      className="text-xs h-8 px-3 flex items-center gap-1.5 rounded-xl border-0 text-white font-semibold"
+                      style={{
+                        background: "linear-gradient(135deg, #3b82f6, #6366f1)",
+                        boxShadow: "0 0 15px rgba(99,102,241,0.4)",
+                      }}
                       data-ocid="leads.add_button"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -720,20 +956,24 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                 {/* Search bar */}
                 <div className="px-4 pt-3">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                     <input
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search by name, mobile or email\u2026"
-                      className="w-full pl-9 pr-9 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50"
+                      placeholder="Search by name, mobile or email…"
+                      className="w-full pl-9 pr-9 py-2 text-sm rounded-xl focus:outline-none text-white placeholder:text-slate-500"
+                      style={{
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.09)",
+                      }}
                       data-ocid="leads.search_input"
                     />
                     {searchQuery && (
                       <button
                         type="button"
                         onClick={() => setSearchQuery("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
                         aria-label="Clear search"
                       >
                         <X className="w-4 h-4" />
@@ -745,24 +985,36 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                 {/* Status filter chips */}
                 <div className="px-4 py-2.5 overflow-x-auto">
                   <div className="flex items-center gap-1.5 min-w-max">
-                    {/* "All" chip */}
                     <button
                       type="button"
                       onClick={() => setStatusFilter(STATUS_ALL)}
-                      className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${
+                      className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all"
+                      style={
                         statusFilter === STATUS_ALL
-                          ? "bg-gray-900 text-white border-gray-900"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
-                      }`}
+                          ? {
+                              background:
+                                "linear-gradient(135deg, #3b82f6, #6366f1)",
+                              color: "#fff",
+                              boxShadow: "0 0 10px rgba(99,102,241,0.30)",
+                              border: "1px solid transparent",
+                            }
+                          : {
+                              background: "rgba(255,255,255,0.05)",
+                              border: "1px solid rgba(255,255,255,0.10)",
+                              color: "#94a3b8",
+                            }
+                      }
                       data-ocid="leads.status_filter.all.toggle"
                     >
                       All
                       <span
-                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-0.5 ${
-                          statusFilter === STATUS_ALL
-                            ? "bg-white/20 text-white"
-                            : "bg-gray-100 text-gray-500"
-                        }`}
+                        className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-0.5"
+                        style={{
+                          background:
+                            statusFilter === STATUS_ALL
+                              ? "rgba(255,255,255,0.20)"
+                              : "rgba(255,255,255,0.08)",
+                        }}
                       >
                         {statusCounts.All}
                       </span>
@@ -778,24 +1030,41 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                           onClick={() =>
                             setStatusFilter(isActive ? STATUS_ALL : status)
                           }
-                          className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${
+                          className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all"
+                          style={
                             isActive
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600"
-                          }`}
+                              ? {
+                                  background:
+                                    "linear-gradient(135deg, #3b82f6, #6366f1)",
+                                  color: "#fff",
+                                  boxShadow: "0 0 10px rgba(99,102,241,0.30)",
+                                  border: "1px solid transparent",
+                                }
+                              : {
+                                  background: "rgba(255,255,255,0.04)",
+                                  border: "1px solid rgba(255,255,255,0.09)",
+                                  color: "#94a3b8",
+                                }
+                          }
                           data-ocid={`leads.status_filter.${status
                             .toLowerCase()
                             .replace(/\s+/g, "_")}.toggle`}
                         >
                           {status}
                           <span
-                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-0.5 ${
-                              isActive
-                                ? "bg-white/20 text-white"
+                            className="px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-0.5"
+                            style={{
+                              background: isActive
+                                ? "rgba(255,255,255,0.20)"
                                 : count > 0
-                                  ? "bg-blue-50 text-blue-600"
-                                  : "bg-gray-100 text-gray-400"
-                            }`}
+                                  ? "rgba(59,130,246,0.20)"
+                                  : "rgba(255,255,255,0.06)",
+                              color: isActive
+                                ? "#fff"
+                                : count > 0
+                                  ? "#93c5fd"
+                                  : "#475569",
+                            }}
                           >
                             {count}
                           </span>
@@ -811,15 +1080,18 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                       className="flex flex-col items-center justify-center py-12 text-center"
                       data-ocid="leads.empty_state"
                     >
-                      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
-                        <Users className="w-6 h-6 text-gray-400" />
+                      <div
+                        className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
+                        style={glassCard}
+                      >
+                        <Users className="w-6 h-6 text-slate-500" />
                       </div>
-                      <p className="text-sm font-semibold text-gray-600">
+                      <p className="text-sm font-semibold text-slate-300">
                         {searchQuery || statusFilter !== STATUS_ALL
                           ? "No leads match your filter"
                           : "No leads yet"}
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-slate-500 mt-1">
                         {searchQuery || statusFilter !== STATUS_ALL
                           ? "Try clearing the search or status filter"
                           : 'Tap "New Lead" to get started'}
@@ -842,7 +1114,10 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
           )}
 
           {/* Footer */}
-          <footer className="px-4 py-4 text-center text-xs text-gray-400 border-t border-gray-100 mt-2">
+          <footer
+            className="px-4 py-4 text-center text-xs text-slate-400 mt-2"
+            style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
+          >
             Powered by Prashant Chandratre | 7709446589
           </footer>
         </main>

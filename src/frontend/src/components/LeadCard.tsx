@@ -9,56 +9,56 @@ const statusConfig: Record<
   "Docs Pending": {
     dot: "bg-orange-400",
     label: "Docs Pending",
-    bg: "bg-orange-50",
-    text: "text-orange-700",
+    bg: "bg-orange-500/15",
+    text: "text-orange-300",
   },
   "Docs Received": {
     dot: "bg-blue-400",
     label: "Docs Received",
-    bg: "bg-blue-50",
-    text: "text-blue-700",
+    bg: "bg-blue-500/15",
+    text: "text-blue-300",
   },
   "Details Completed": {
     dot: "bg-cyan-400",
     label: "Details Completed",
-    bg: "bg-cyan-50",
-    text: "text-cyan-700",
+    bg: "bg-cyan-500/15",
+    text: "text-cyan-300",
   },
   "Quotation Ready": {
     dot: "bg-teal-400",
     label: "Quotation Ready",
-    bg: "bg-teal-50",
-    text: "text-teal-700",
+    bg: "bg-teal-500/15",
+    text: "text-teal-300",
   },
   "PB Action Required": {
     dot: "bg-red-400",
     label: "PB Action Required",
-    bg: "bg-red-50",
-    text: "text-red-700",
+    bg: "bg-red-500/15",
+    text: "text-red-300",
   },
   "KYC Pending": {
     dot: "bg-yellow-400",
     label: "KYC Pending",
-    bg: "bg-yellow-50",
-    text: "text-yellow-700",
+    bg: "bg-yellow-500/15",
+    text: "text-yellow-300",
   },
   "KYC Completed": {
     dot: "bg-green-400",
     label: "KYC Completed",
-    bg: "bg-green-50",
-    text: "text-green-700",
+    bg: "bg-green-500/15",
+    text: "text-green-300",
   },
   "Payment Sent": {
     dot: "bg-purple-400",
     label: "Payment Sent",
-    bg: "bg-purple-50",
-    text: "text-purple-700",
+    bg: "bg-purple-500/15",
+    text: "text-purple-300",
   },
   Completed: {
     dot: "bg-emerald-400",
     label: "Completed",
-    bg: "bg-emerald-50",
-    text: "text-emerald-700",
+    bg: "bg-emerald-500/15",
+    text: "text-emerald-300",
   },
 };
 
@@ -84,36 +84,63 @@ export default function LeadCard({
     <button
       type="button"
       onClick={() => onClick(lead)}
-      className="w-full text-left bg-white rounded-xl border border-gray-200 shadow-xs hover:shadow-card hover:border-blue-200 transition-all duration-150 active:scale-[0.99]"
+      className="w-full text-left rounded-2xl shadow-lg transition-all duration-200 active:scale-[0.99] animate-fadeInUp"
+      style={{
+        animationDelay: `${index * 50}ms`,
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background =
+          "rgba(255,255,255,0.07)";
+        (e.currentTarget as HTMLButtonElement).style.borderColor =
+          "rgba(255,255,255,0.14)";
+        (e.currentTarget as HTMLButtonElement).style.boxShadow =
+          "0 8px 32px rgba(0,0,0,0.3)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.background =
+          "rgba(255,255,255,0.04)";
+        (e.currentTarget as HTMLButtonElement).style.borderColor =
+          "rgba(255,255,255,0.08)";
+        (e.currentTarget as HTMLButtonElement).style.boxShadow = "";
+      }}
       data-ocid={`leads.item.${index + 1}`}
     >
       <div className="flex items-center gap-3 px-4 py-3.5">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center flex-shrink-0">
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ background: "linear-gradient(135deg, #1d4ed8, #4f46e5)" }}
+        >
           {lead.name ? (
-            <span className="text-sm font-semibold text-blue-700">
+            <span className="text-sm font-bold text-white">
               {lead.name.charAt(0).toUpperCase()}
             </span>
           ) : (
-            <User className="w-4 h-4 text-blue-500" />
+            <User className="w-4 h-4 text-blue-200" />
           )}
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <Phone className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-            <span className="text-sm font-semibold text-gray-900 font-mono tracking-wide">
+            <Phone className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+            <span className="text-sm font-semibold text-white font-mono tracking-wide">
               {lead.mobileNumber}
             </span>
           </div>
-          <p className="text-xs text-gray-500 mt-0.5 truncate">
-            {lead.name || <span className="italic text-gray-300">No name</span>}
+          <p className="text-xs text-slate-400 mt-0.5 truncate">
+            {lead.name || (
+              <span className="italic text-slate-600">No name</span>
+            )}
           </p>
           {showAgent && (
             <div className="flex items-center gap-1 mt-0.5">
               <UserCheck className="w-3 h-3 text-indigo-400 flex-shrink-0" />
-              <span className="text-[11px] text-indigo-600 font-medium truncate">
+              <span className="text-[11px] text-indigo-300 font-medium truncate">
                 {agentName}
               </span>
             </div>
@@ -123,6 +150,7 @@ export default function LeadCard({
         {/* Status badge */}
         <div
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${config.bg} flex-shrink-0`}
+          style={{ border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <span
             className={`w-1.5 h-1.5 rounded-full ${config.dot} flex-shrink-0`}
@@ -135,7 +163,7 @@ export default function LeadCard({
         </div>
 
         {/* Arrow */}
-        <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0 ml-1" />
+        <ChevronRight className="w-4 h-4 text-slate-600 flex-shrink-0 ml-1 group-hover:text-slate-300" />
       </div>
     </button>
   );
