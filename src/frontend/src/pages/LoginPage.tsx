@@ -64,23 +64,30 @@ export default function LoginPage({ onTrackPolicy }: LoginPageProps) {
         {/* Branding */}
         <div className="text-center mb-8">
           <div
-            className="inline-flex items-center justify-center rounded-2xl mb-4 shadow-2xl overflow-hidden"
+            className="inline-flex items-center justify-center mb-4 shadow-2xl overflow-hidden"
             style={{
-              background: "linear-gradient(135deg, #1d4ed8, #7c3aed)",
-              width: 72,
-              height: 72,
-              boxShadow: "0 0 30px rgba(99,102,241,0.5)",
+              background: "#ffffff",
+              width: 80,
+              height: 80,
+              borderRadius: 16,
+              boxShadow:
+                "0 0 30px rgba(99,102,241,0.5), 0 8px 24px rgba(0,0,0,0.4)",
             }}
           >
             {!logoError ? (
               <img
-                src="/assets/screenshot_20260405-205518.chrome-019d5e42-283b-7374-b5f8-fe4781c839fe.png"
+                src="/assets/generated/pb-logo.png"
                 alt="PB Insurance Logo"
-                className="w-full h-full object-cover"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  display: "block",
+                }}
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <Shield className="w-9 h-9 text-white" />
+              <Shield className="w-9 h-9 text-indigo-600" />
             )}
           </div>
           <h1 className="text-3xl font-black text-white tracking-tight">

@@ -7,7 +7,6 @@ import {
   ExternalLink,
   LogOut,
   MessageCircle,
-  Mic,
   Plus,
   Search,
   Shield,
@@ -19,6 +18,7 @@ import { useMemo, useState } from "react";
 import LeadCard from "../components/LeadCard";
 import LeadDetailPage from "../components/LeadDetailPage";
 import NewLeadFullForm from "../components/NewLeadFullForm";
+import PriyaAssistant from "../components/PriyaAssistant";
 import Sidebar from "../components/Sidebar";
 import WhatsAppLeadModal from "../components/WhatsAppLeadModal";
 import { AGENTS, useApp } from "../context/AppContext";
@@ -559,136 +559,11 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                 ))}
               </div>
 
-              {/* ── Priya AI Assistant Card (with avatar) ── */}
-              <div
-                className="rounded-2xl p-5 shadow-xl"
-                style={{
-                  backdropFilter: "blur(6px)",
-                  WebkitBackdropFilter: "blur(6px)",
-                  background:
-                    "linear-gradient(135deg, rgba(88,28,135,0.35), rgba(49,46,129,0.35))",
-                  border: "1.5px solid rgba(139,92,246,0.40)",
-                  boxShadow: "0 8px 32px rgba(139,92,246,0.18)",
-                }}
-              >
-                <div className="flex items-center gap-4">
-                  {/* Priya Avatar */}
-                  <div className="relative flex-shrink-0">
-                    {/* Outer glow ring */}
-                    <div
-                      className="absolute inset-[-4px] rounded-full"
-                      style={{
-                        background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
-                        filter: "blur(8px)",
-                        opacity: 0.7,
-                      }}
-                    />
-                    {/* Avatar circle */}
-                    <div
-                      className="relative z-10 w-16 h-16 rounded-full overflow-hidden"
-                      style={{
-                        border: "2.5px solid rgba(167,139,250,0.7)",
-                        boxShadow:
-                          "0 0 0 3px rgba(99,102,241,0.25), 0 0 20px rgba(139,92,246,0.5)",
-                      }}
-                    >
-                      <img
-                        src="/assets/generated/priya-avatar-transparent.dim_200x200.png"
-                        alt="Priya AI Avatar"
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          // Fallback to initial if image fails
-                          (e.currentTarget as HTMLImageElement).style.display =
-                            "none";
-                        }}
-                      />
-                      {/* fallback gradient shown behind image */}
-                      <div
-                        className="absolute inset-0 flex items-center justify-center text-white text-2xl font-black"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                          zIndex: -1,
-                        }}
-                      >
-                        P
-                      </div>
-                    </div>
-                    {/* Green status dot */}
-                    <div
-                      className="absolute bottom-0.5 right-0.5 w-4 h-4 rounded-full z-20"
-                      style={{
-                        background: "#22c55e",
-                        border: "2px solid #0a0e1a",
-                        boxShadow: "0 0 8px rgba(34,197,94,0.8)",
-                        animation: "pulse 2s infinite",
-                      }}
-                    />
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-bold text-white">
-                      Priya AI Assistant
-                    </h3>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <div
-                        className="w-2 h-2 rounded-full bg-green-400"
-                        style={{ animation: "pulse 1.5s infinite" }}
-                      />
-                      <span className="text-sm font-semibold text-green-400">
-                        Active
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-300 mt-1 leading-snug">
-                      Namaste! Main Priya hoon — aapki insurance assistant.
-                      Quotation, documents, ya payment — sab mein madad karungi.
-                    </p>
-                  </div>
-
-                  {/* Right: mic animation + button */}
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    {/* Animated mic */}
-                    <div className="relative">
-                      <div
-                        className="absolute inset-0 rounded-full"
-                        style={{
-                          background: "rgba(139,92,246,0.3)",
-                          animation:
-                            "ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite",
-                        }}
-                      />
-                      <div
-                        className="relative w-11 h-11 rounded-full flex items-center justify-center z-10"
-                        style={{
-                          background: "rgba(139,92,246,0.20)",
-                          border: "1.5px solid rgba(139,92,246,0.50)",
-                        }}
-                      >
-                        <Mic
-                          className="w-5 h-5 text-purple-300"
-                          style={{
-                            filter: "drop-shadow(0 0 6px rgba(139,92,246,0.9))",
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {}}
-                      className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all"
-                      style={{
-                        background: "linear-gradient(135deg, #7c3aed, #4f46e5)",
-                        boxShadow: "0 0 16px rgba(139,92,246,0.45)",
-                      }}
-                      data-ocid="priya.talk.button"
-                    >
-                      <Mic className="w-4 h-4" />
-                      Talk to Priya
-                    </button>
-                  </div>
-                </div>
-              </div>
+              {/* ── Priya AI — Inline Unified Chat + Voice Interface ── */}
+              <PriyaAssistant
+                inline
+                onOpenNewLead={() => setShowFullForm(true)}
+              />
 
               {/* ── Agent Performance Dashboard ── */}
               <div

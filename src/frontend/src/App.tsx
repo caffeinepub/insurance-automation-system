@@ -45,6 +45,7 @@ function AppInner() {
       ) : (
         <LoginPage onTrackPolicy={() => setView("customer-tracking")} />
       )}
+      {/* Floating Priya: shown on non-dashboard views (other pages) */}
       {currentUser && <PriyaAssistant />}
       <FloatingWhatsApp />
       <Toaster position="bottom-right" richColors />

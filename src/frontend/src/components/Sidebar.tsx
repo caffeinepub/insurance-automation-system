@@ -56,13 +56,13 @@ export default function Sidebar({
         className="flex items-center gap-3 px-5 py-5"
         style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
       >
-        {/* Logo container: white circular bg, glow, shadow */}
+        {/* Logo container: white rounded square bg, glow, shadow */}
         <div
           className="flex-shrink-0 flex items-center justify-center"
           style={{
             width: 52,
             height: 52,
-            borderRadius: "50%",
+            borderRadius: 12,
             background: "#ffffff",
             boxShadow:
               "0 0 0 2px rgba(99,102,241,0.4), 0 0 18px 6px rgba(99,102,241,0.35), 0 4px 16px rgba(0,0,0,0.5)",
@@ -71,12 +71,12 @@ export default function Sidebar({
         >
           {!logoError ? (
             <img
-              src="/assets/screenshot_20260405-205518.chrome-019d5e42-283b-7374-b5f8-fe4781c839fe.png"
+              src="/assets/generated/pb-logo.png"
               alt="PB Insurance Logo"
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+                objectFit: "contain",
                 display: "block",
               }}
               onError={() => setLogoError(true)}

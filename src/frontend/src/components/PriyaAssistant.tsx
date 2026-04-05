@@ -63,6 +63,9 @@ type ConversationState =
 
 export interface PriyaAssistantProps {
   onOpenNewLead?: () => void;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
+  inline?: boolean;
 }
 
 // ---- Utility ----
@@ -118,7 +121,7 @@ function generatePriyaReply(
     return "Main payment process mein madad karungi. Payment link aapke lead detail page mein save hai. Wahan jaayein aur 'Send Payment Link' button use karein WhatsApp pe bhejne ke liye.";
   }
   if (/help|madad|what can you|kya kar/i.test(msg)) {
-    return "Main Priya hoon, aapki insurance assistant! Main yeh kar sakti hoon:\n\n• Quotation process guide\n• New lead create karna\n• Payment process help\n• NCB, IDV, claim explain karna\n• Document checklist\n\nKoi bhi command try karein ya seedha poochh lein!";
+    return "Main Priya hoon, aapki insurance assistant! Main yeh kar sakti hoon:\n\n\u2022 Quotation process guide\n\u2022 New lead create karna\n\u2022 Payment process help\n\u2022 NCB, IDV, claim explain karna\n\u2022 Document checklist\n\nKoi bhi command try karein ya seedha poochh lein!";
   }
 
   // Insurance Q&A keyword checks
@@ -160,9 +163,9 @@ function generatePriyaReply(
     }
     if (/ha|yes|haan|match|sahi/i.test(msg)) {
       setState("rc_check");
-      return "Bahut acha! Step 3: RC ke hisaab se saari details match karein — owner name, engine number, chassis number. Kya sab match kar raha hai?";
+      return "Bahut acha! Step 3: RC ke hisaab se saari details match karein \u2014 owner name, engine number, chassis number. Kya sab match kar raha hai?";
     }
-    return "Fuel type aur model check karke batayein — match hai ya nahi?";
+    return "Fuel type aur model check karke batayein \u2014 match hai ya nahi?";
   }
 
   if (state === "rc_check") {
@@ -177,11 +180,11 @@ function generatePriyaReply(
 
   if (state === "document_check") {
     if (/no|nahi|missing|nhi/i.test(msg)) {
-      return "Please missing documents collect karein:\n• RC Front aur Back (PDF/JPG)\n• PAN Card (PDF/JPG)\n• Aadhaar Front aur Back (PDF/JPG)\n\nSab documents milne ke baad lead detail page mein upload karein.";
+      return "Please missing documents collect karein:\n\u2022 RC Front aur Back (PDF/JPG)\n\u2022 PAN Card (PDF/JPG)\n\u2022 Aadhaar Front aur Back (PDF/JPG)\n\nSab documents milne ke baad lead detail page mein upload karein.";
     }
     if (/ha|yes|haan|sab|all|complete/i.test(msg)) {
       setState("quote_stage");
-      return "Sab documents complete hain! Ab quotation process start hoti hai. Quotation aa gaya hai — sabhi options check karein aur highest payout plan select karein.";
+      return "Sab documents complete hain! Ab quotation process start hoti hai. Quotation aa gaya hai \u2014 sabhi options check karein aur highest payout plan select karein.";
     }
   }
 
@@ -347,11 +350,284 @@ const QUICK_CHIPS = [
   "Help",
 ];
 
+// ---- Shared chat body ----
+
+interface ChatBodyProps {
+  messages: ChatMessage[];
+  isBotTyping: boolean;
+  inputText: string;
+  isListening: boolean;
+  micEnabled: boolean;
+  voiceEnabled: boolean;
+  bottomRef: React.RefObject<HTMLDivElement | null>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  onInputChange: (v: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onSend: () => void;
+  onMicToggle: () => void;
+  onChipClick: (chip: string) => void;
+  onVoiceToggle: () => void;
+  onMicEnabledToggle: () => void;
+  onStop: () => void;
+  onClose?: () => void;
+  inline?: boolean;
+}
+
+function ChatBody({
+  messages,
+  isBotTyping,
+  inputText,
+  isListening,
+  micEnabled,
+  voiceEnabled,
+  bottomRef,
+  inputRef,
+  onInputChange,
+  onKeyDown,
+  onSend,
+  onMicToggle,
+  onChipClick,
+  onVoiceToggle,
+  onMicEnabledToggle,
+  onStop,
+  onClose,
+  inline,
+}: ChatBodyProps) {
+  return (
+    <>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-700 to-indigo-700 px-4 py-3 flex-shrink-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white/40 overflow-hidden flex items-center justify-center flex-shrink-0">
+                <img
+                  src="/assets/generated/priya-avatar-transparent.dim_200x200.png"
+                  alt="Priya"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display =
+                      "none";
+                  }}
+                />
+                <Sparkles className="w-5 h-5 text-white absolute" />
+              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-purple-700 animate-pulse" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm leading-tight">
+                Priya AI
+              </p>
+              <p className="text-purple-200 text-[11px]">
+                Insurance Assistant • Active 🟢
+              </p>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={onVoiceToggle}
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                voiceEnabled
+                  ? "bg-white/20 hover:bg-white/30 text-white"
+                  : "bg-red-400/80 hover:bg-red-400 text-white"
+              }`}
+              aria-label={voiceEnabled ? "Mute voice" : "Unmute voice"}
+              data-ocid="priya.toggle"
+              title={voiceEnabled ? "Voice ON" : "Voice OFF"}
+            >
+              {voiceEnabled ? (
+                <Volume2 className="w-3.5 h-3.5" />
+              ) : (
+                <VolumeX className="w-3.5 h-3.5" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={onMicEnabledToggle}
+              className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+                micEnabled
+                  ? "bg-white/20 hover:bg-white/30 text-white"
+                  : "bg-red-400/80 hover:bg-red-400 text-white"
+              }`}
+              aria-label={micEnabled ? "Disable mic" : "Enable mic"}
+              data-ocid="priya.switch"
+              title={micEnabled ? "Mic ON" : "Mic OFF"}
+            >
+              {micEnabled ? (
+                <Mic className="w-3.5 h-3.5" />
+              ) : (
+                <MicOff className="w-3.5 h-3.5" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={onStop}
+              className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+              aria-label="Stop assistant"
+              data-ocid="priya.secondary_button"
+              title="Stop"
+            >
+              <StopCircle className="w-3.5 h-3.5" />
+            </button>
+
+            {!inline && onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
+                aria-label="Close Priya"
+                data-ocid="priya.close_button"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <ScrollArea className="flex-1 bg-[#1a1040]/60" style={{ minHeight: 0 }}>
+        <div className="p-3 space-y-2">
+          <div className="flex justify-center">
+            <span className="text-[10px] bg-white/10 text-purple-200 px-2.5 py-0.5 rounded-full font-medium">
+              Today
+            </span>
+          </div>
+
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} msg={msg} />
+          ))}
+
+          {isBotTyping && (
+            <div className="flex justify-start">
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center flex-shrink-0 mr-2 mt-0.5">
+                <span className="text-white text-[10px] font-bold">P</span>
+              </div>
+              <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm border border-gray-100">
+                <div className="flex gap-1 items-center h-4">
+                  <span
+                    className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <span
+                    className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={bottomRef} />
+        </div>
+      </ScrollArea>
+
+      {/* Quick reply chips */}
+      <div
+        className="px-3 pt-2 pb-1 flex gap-2 overflow-x-auto flex-shrink-0"
+        style={{
+          background: "rgba(88,28,135,0.25)",
+          borderTop: "1px solid rgba(139,92,246,0.20)",
+        }}
+      >
+        {QUICK_CHIPS.map((chip) => (
+          <button
+            key={chip}
+            type="button"
+            onClick={() => onChipClick(chip)}
+            disabled={isBotTyping}
+            className="flex-shrink-0 text-[11px] font-medium text-purple-200 border border-purple-500/40 rounded-full px-2.5 py-1 hover:bg-purple-500/20 disabled:opacity-40 transition-colors whitespace-nowrap"
+            data-ocid="priya.tab"
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+
+      {/* Input area */}
+      <div
+        className="px-3 py-2.5 flex items-center gap-2 flex-shrink-0"
+        style={{
+          background: "rgba(49,46,129,0.40)",
+          borderTop: "1px solid rgba(139,92,246,0.25)",
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          value={inputText}
+          onChange={(e) => onInputChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Kuch bhi poochein Priya se\u2026"
+          className="flex-1 rounded-full text-sm py-2 px-4 border-0 outline-none min-w-0 text-gray-800 placeholder:text-gray-500 focus:ring-2 focus:ring-purple-400/30 shadow-sm"
+          style={{ background: "rgba(255,255,255,0.95)" }}
+          data-ocid="priya.input"
+        />
+
+        <button
+          type="button"
+          onClick={onMicToggle}
+          disabled={!micEnabled}
+          className={`relative w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+            isListening
+              ? "bg-red-500 hover:bg-red-600 text-white shadow-lg"
+              : "bg-purple-500/40 hover:bg-purple-500/60 text-purple-200"
+          }`}
+          aria-label={isListening ? "Stop listening" : "Start voice input"}
+          data-ocid="priya.upload_button"
+        >
+          {isListening && (
+            <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-60" />
+          )}
+          {isListening ? (
+            <MicOff className="w-4 h-4 relative z-10" />
+          ) : (
+            <Mic className="w-4 h-4" />
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={onSend}
+          disabled={!inputText.trim() || isBotTyping}
+          className="w-9 h-9 flex-shrink-0 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-sm active:scale-95"
+          aria-label="Send message"
+          data-ocid="priya.submit_button"
+        >
+          <Send className="w-4 h-4 text-white" />
+        </button>
+      </div>
+    </>
+  );
+}
+
 // ---- Main Component ----
 
-export default function PriyaAssistant({ onOpenNewLead }: PriyaAssistantProps) {
+export default function PriyaAssistant({
+  onOpenNewLead,
+  externalOpen,
+  onExternalOpenChange,
+  inline = false,
+}: PriyaAssistantProps) {
   const { leads } = useApp();
   const [open, setOpen] = useState(false);
+
+  // Sync with external open state (e.g. from dashboard card)
+  useEffect(() => {
+    if (externalOpen !== undefined) {
+      setOpen(externalOpen);
+    }
+  }, [externalOpen]);
+
   const [greeted, setGreeted] = useState(false);
   const [inputText, setInputText] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -389,9 +665,12 @@ export default function PriyaAssistant({ onOpenNewLead }: PriyaAssistantProps) {
     }, 50);
   }, []);
 
-  // Welcome greeting on first open
+  // Determine whether the chat is "active" (inline is always active; popup needs open=true)
+  const isActive = inline || open;
+
+  // Welcome greeting: for inline — on mount; for popup — when it opens
   useEffect(() => {
-    if (open && !greeted) {
+    if (isActive && !greeted) {
       setGreeted(true);
       const welcomeText =
         "Hello \ud83d\udc4b Main Priya hoon. Main aapki insurance assistant hoon. Aapko kis cheez mein madad chahiye?";
@@ -407,21 +686,21 @@ export default function PriyaAssistant({ onOpenNewLead }: PriyaAssistantProps) {
         "Hello, main Priya hoon. Main aapki insurance assistant hoon. Aapko kis cheez mein madad chahiye?",
       );
     }
-  }, [open, greeted, speak, scrollToBottom]);
+  }, [isActive, greeted, speak, scrollToBottom]);
 
-  // Focus input when panel opens
+  // Focus input when panel opens (popup only)
   useEffect(() => {
-    if (open) {
+    if (!inline && open) {
       setTimeout(() => inputRef.current?.focus(), 200);
     }
-  }, [open]);
+  }, [open, inline]);
 
   // Scroll on new messages
   useEffect(() => {
-    if (open && messages.length > 0) {
+    if (isActive && messages.length > 0) {
       scrollToBottom();
     }
-  }, [messages, open, scrollToBottom]);
+  }, [messages, isActive, scrollToBottom]);
 
   const processUserMessage = useCallback(
     (text: string) => {
@@ -515,8 +794,61 @@ export default function PriyaAssistant({ onOpenNewLead }: PriyaAssistantProps) {
   const handleClose = () => {
     handleStop();
     setOpen(false);
+    onExternalOpenChange?.(false);
   };
 
+  const handleOpen = () => {
+    setOpen(true);
+    onExternalOpenChange?.(true);
+  };
+
+  const sharedProps: ChatBodyProps = {
+    messages,
+    isBotTyping,
+    inputText,
+    isListening,
+    micEnabled,
+    voiceEnabled,
+    bottomRef,
+    inputRef,
+    onInputChange: setInputText,
+    onKeyDown: handleKeyDown,
+    onSend: handleSend,
+    onMicToggle: () => (isListening ? stopListening() : startListening()),
+    onChipClick: handleQuickChip,
+    onVoiceToggle: () => setVoiceEnabled(!voiceEnabled),
+    onMicEnabledToggle: () => {
+      if (isListening) stopListening();
+      setMicEnabled(!micEnabled);
+    },
+    onStop: handleStop,
+    onClose: handleClose,
+    inline,
+  };
+
+  // ── INLINE MODE ──
+  if (inline) {
+    return (
+      <div
+        className="rounded-2xl overflow-hidden flex flex-col shadow-2xl"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(88,28,135,0.35), rgba(49,46,129,0.35))",
+          border: "1.5px solid rgba(139,92,246,0.40)",
+          boxShadow: "0 8px 32px rgba(139,92,246,0.18)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          height: "480px",
+          maxHeight: "480px",
+        }}
+        data-ocid="priya.panel"
+      >
+        <ChatBody {...sharedProps} />
+      </div>
+    );
+  }
+
+  // ── FLOATING POPUP MODE ──
   return (
     <>
       {/* ---- Chat Panel ---- */}
@@ -530,206 +862,22 @@ export default function PriyaAssistant({ onOpenNewLead }: PriyaAssistantProps) {
         aria-hidden={!open}
       >
         <div
-          className="bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden flex flex-col"
-          style={{ height: "min(520px, calc(100dvh - 160px))" }}
+          className="rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(88,28,135,0.97), rgba(49,46,129,0.97))",
+            border: "1.5px solid rgba(139,92,246,0.50)",
+            height: "min(520px, calc(100dvh - 160px))",
+          }}
         >
-          {/* Header */}
-          <div className="bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-3 flex-shrink-0">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-10 h-10 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center flex-shrink-0">
-                    <Sparkles className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-white animate-pulse" />
-                </div>
-                <div>
-                  <p className="text-white font-bold text-sm leading-tight">
-                    Priya
-                  </p>
-                  <p className="text-purple-200 text-[11px]">
-                    Insurance Assistant • Online
-                  </p>
-                </div>
-              </div>
-
-              {/* Controls */}
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setVoiceEnabled(!voiceEnabled)}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                    voiceEnabled
-                      ? "bg-white/20 hover:bg-white/30 text-white"
-                      : "bg-red-400/80 hover:bg-red-400 text-white"
-                  }`}
-                  aria-label={voiceEnabled ? "Mute voice" : "Unmute voice"}
-                  data-ocid="priya.toggle"
-                  title={voiceEnabled ? "Voice ON" : "Voice OFF"}
-                >
-                  {voiceEnabled ? (
-                    <Volume2 className="w-3.5 h-3.5" />
-                  ) : (
-                    <VolumeX className="w-3.5 h-3.5" />
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isListening) stopListening();
-                    setMicEnabled(!micEnabled);
-                  }}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-                    micEnabled
-                      ? "bg-white/20 hover:bg-white/30 text-white"
-                      : "bg-red-400/80 hover:bg-red-400 text-white"
-                  }`}
-                  aria-label={micEnabled ? "Disable mic" : "Enable mic"}
-                  data-ocid="priya.switch"
-                  title={micEnabled ? "Mic ON" : "Mic OFF"}
-                >
-                  {micEnabled ? (
-                    <Mic className="w-3.5 h-3.5" />
-                  ) : (
-                    <MicOff className="w-3.5 h-3.5" />
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleStop}
-                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
-                  aria-label="Stop assistant"
-                  data-ocid="priya.secondary_button"
-                  title="Stop"
-                >
-                  <StopCircle className="w-3.5 h-3.5" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="w-7 h-7 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white transition-colors"
-                  aria-label="Close Priya"
-                  data-ocid="priya.close_button"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <ScrollArea className="flex-1 bg-[#ECE5DD]">
-            <div className="p-3 space-y-2">
-              <div className="flex justify-center">
-                <span className="text-[10px] bg-white/70 text-gray-500 px-2.5 py-0.5 rounded-full font-medium">
-                  Today
-                </span>
-              </div>
-
-              {messages.map((msg) => (
-                <MessageBubble key={msg.id} msg={msg} />
-              ))}
-
-              {isBotTyping && (
-                <div className="flex justify-start">
-                  <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center flex-shrink-0 mr-2 mt-0.5">
-                    <span className="text-white text-[10px] font-bold">P</span>
-                  </div>
-                  <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm border border-gray-100">
-                    <div className="flex gap-1 items-center h-4">
-                      <span
-                        className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0ms" }}
-                      />
-                      <span
-                        className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "150ms" }}
-                      />
-                      <span
-                        className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "300ms" }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div ref={bottomRef} />
-            </div>
-          </ScrollArea>
-
-          {/* Quick reply chips */}
-          <div className="bg-white px-3 pt-2 pb-1 border-t border-purple-100 flex gap-2 overflow-x-auto flex-shrink-0">
-            {QUICK_CHIPS.map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => handleQuickChip(chip)}
-                disabled={isBotTyping}
-                className="flex-shrink-0 text-[11px] font-medium text-purple-600 border border-purple-300/60 rounded-full px-2.5 py-1 hover:bg-purple-50 disabled:opacity-40 transition-colors whitespace-nowrap"
-                data-ocid="priya.tab"
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
-
-          {/* Input area */}
-          <div className="bg-[#F0F0F0] px-3 py-2.5 flex items-center gap-2 flex-shrink-0">
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Kuch bhi poochein Priya se\u2026"
-              className="flex-1 bg-white rounded-full text-sm py-2 px-4 border-0 outline-none focus:ring-2 focus:ring-purple-400/30 shadow-sm min-w-0"
-              data-ocid="priya.input"
-            />
-
-            <button
-              type="button"
-              onClick={() => (isListening ? stopListening() : startListening())}
-              disabled={!micEnabled}
-              className={`relative w-9 h-9 flex-shrink-0 rounded-full flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                isListening
-                  ? "bg-red-500 hover:bg-red-600 text-white shadow-lg"
-                  : "bg-purple-100 hover:bg-purple-200 text-purple-600"
-              }`}
-              aria-label={isListening ? "Stop listening" : "Start voice input"}
-              data-ocid="priya.upload_button"
-            >
-              {isListening && (
-                <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-60" />
-              )}
-              {isListening ? (
-                <MicOff className="w-4 h-4 relative z-10" />
-              ) : (
-                <Mic className="w-4 h-4" />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={!inputText.trim() || isBotTyping}
-              className="w-9 h-9 flex-shrink-0 rounded-full bg-gradient-to-br from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-all shadow-sm active:scale-95"
-              aria-label="Send message"
-              data-ocid="priya.submit_button"
-            >
-              <Send className="w-4 h-4 text-white" />
-            </button>
-          </div>
+          <ChatBody {...sharedProps} />
         </div>
       </div>
 
       {/* ---- Floating Priya Button ---- */}
       <button
         type="button"
-        onClick={() => (open ? handleClose() : setOpen(true))}
+        onClick={() => (open ? handleClose() : handleOpen())}
         className={`fixed bottom-20 right-4 z-[60] w-14 h-14 rounded-full shadow-xl flex flex-col items-center justify-center transition-all duration-300 active:scale-95 relative ${
           open
             ? "bg-gray-700 hover:bg-gray-800 shadow-gray-400/40"
