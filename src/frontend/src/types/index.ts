@@ -28,6 +28,7 @@ export interface AppUser {
   password: string;
   name: string;
   role: UserRole;
+  whatsapp_number?: string;
 }
 
 export interface Lead {
@@ -35,6 +36,7 @@ export interface Lead {
   name: string;
   mobileNumber: string;
   assignedAgent: string;
+  agentId?: string; // mirrors assignedAgent email — used for agent mapping
   workflowStatus: WorkflowStatus;
   rcStatus: string;
   claim: boolean | null;

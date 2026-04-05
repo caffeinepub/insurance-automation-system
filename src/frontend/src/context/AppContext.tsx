@@ -8,6 +8,7 @@ export const AGENTS: AppUser[] = [
     password: "agent123",
     name: "Raj Kumar",
     role: "agent",
+    whatsapp_number: "9168762915",
   },
   {
     email: "agent2@insurance.com",
@@ -36,6 +37,12 @@ const USERS: AppUser[] = [
 export function getAgentName(email: string): string {
   const found = USERS.find((u) => u.email === email);
   return found ? found.name : email;
+}
+
+export function getAgentByWhatsapp(
+  whatsappNumber: string,
+): AppUser | undefined {
+  return AGENTS.find((a) => a.whatsapp_number === whatsappNumber);
 }
 
 function generateMobile(): string {
@@ -86,6 +93,7 @@ export function createDefaultLead(overrides: Partial<Lead> = {}): Lead {
     createdAt: new Date().toISOString(),
     policyAmount: 0,
     commissionPercent: 0,
+    agentId: "agent1@insurance.com",
     ...overrides,
   };
 }
@@ -347,13 +355,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const addLead = useCallback((assignedAgent?: string) => {
     const agent = assignedAgent ?? "agent1@insurance.com";
-    const newLead = createDefaultLead({ assignedAgent: agent });
+    const newLead = createDefaultLead({ assignedAgent: agent, agentId: agent });
     setLeads((prev) => [newLead, ...prev]);
   }, []);
 
   const addLeadFull = useCallback(
     (data: Partial<Lead> & { assignedAgent: string }): string => {
-      const newLead = createDefaultLead(data);
+      const newLead = createDefaultLead({
+        ...data,
+        agentId: data.assignedAgent,
+      });
       setLeads((prev) => [newLead, ...prev]);
       return newLead.id;
     },
@@ -362,7 +373,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const updateLead = useCallback((id: string, updates: Partial<Lead>) => {
     setLeads((prev) =>
-      prev.map((lead) => (lead.id === id ? { ...lead, ...updates } : lead)),
+      prev.map((lead) => {
+        if (lead.id !== id) return lead;
+        const merged = { ...lead, ...updates };
+        // Keep agentId in sync with assignedAgent
+        if (updates.assignedAgent) merged.agentId = updates.assignedAgent;
+        return merged;
+      }),
     );
   }, []);
 
