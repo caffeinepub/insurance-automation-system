@@ -13,7 +13,9 @@ import {
   Bell,
   ExternalLink,
   Link2,
+  Mail,
   MessageCircle,
+  Phone,
   UserCheck,
 } from "lucide-react";
 import { useRef, useState } from "react";
@@ -62,7 +64,7 @@ function getStatusMessage(status: WorkflowStatus): string {
     case "Completed":
       return "Hello, your policy has been issued successfully. Thank you!";
     default:
-      return "Hello, your insurance quotation is ready. Please check and confirm.";
+      return "Hello, your insurance process is started. We will share quotation and payment link shortly.";
   }
 }
 
@@ -75,6 +77,25 @@ function buildWhatsAppUrl(
   const phone = digits.length === 10 ? `91${digits}` : digits;
   const message = encodeURIComponent(getStatusMessage(status));
   return `https://wa.me/${phone}?text=${message}`;
+}
+
+function buildWelcomeWhatsAppUrl(mobileRaw: string): string | null {
+  const digits = mobileRaw.replace(/\D/g, "");
+  if (!digits) return null;
+  const phone = digits.length === 10 ? `91${digits}` : digits;
+  const msg = encodeURIComponent(
+    "Hello, your insurance process is started. We will share quotation and payment link shortly.",
+  );
+  return `https://wa.me/${phone}?text=${msg}`;
+}
+
+function buildEmailUrl(emailAddr: string): string | null {
+  if (!emailAddr.trim()) return null;
+  const subject = encodeURIComponent("Insurance Policy Update");
+  const body = encodeURIComponent(
+    "Your policy process is in progress. Payment link and policy copy will be shared soon.",
+  );
+  return `mailto:${emailAddr}?subject=${subject}&body=${body}`;
 }
 
 function buildFollowUpUrl(mobileRaw: string): string | null {
@@ -94,6 +115,7 @@ export default function LeadDetailPage({
   const initializedIdRef = useRef<string | null>(null);
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const [emailField, setEmailField] = useState("");
   const [claim, setClaim] = useState<YesNoEmpty>("");
   const [ncb, setNcb] = useState<number>(0);
   const [ownerChange, setOwnerChange] = useState<YesNoEmpty>("");
@@ -110,6 +132,7 @@ export default function LeadDetailPage({
     initializedIdRef.current = lead.id;
     setName(lead.name ?? "");
     setMobile(lead.mobileNumber);
+    setEmailField(lead.email ?? "");
     setClaim(boolToYesNo(lead.claim));
     setNcb(lead.ncb);
     setOwnerChange(boolToYesNo(lead.ownerChange));
@@ -141,6 +164,7 @@ export default function LeadDetailPage({
     updateLead(lead.id, {
       name,
       mobileNumber: mobile,
+      email: emailField,
       claim: yesNoToBool(claim),
       ncb,
       ownerChange: yesNoToBool(ownerChange),
@@ -168,6 +192,8 @@ export default function LeadDetailPage({
   const savedLink = lead.paymentLink;
   const config = statusConfig[workflowStatus];
   const whatsappUrl = buildWhatsAppUrl(mobile, workflowStatus);
+  const welcomeWhatsAppUrl = buildWelcomeWhatsAppUrl(mobile);
+  const emailUrl = buildEmailUrl(emailField);
   const previewMessage = getStatusMessage(workflowStatus);
 
   const isFollowUpDue =
@@ -202,11 +228,11 @@ export default function LeadDetailPage({
 
       {/* Content */}
       <div className="px-4 py-5 max-w-lg mx-auto space-y-4 pb-32">
-        {/* IDENTITY section */}
+        {/* CONTACT DETAILS section */}
         <section className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
           <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Identity
+              Contact Details
             </p>
           </div>
           <div className="p-4 space-y-4">
@@ -217,23 +243,55 @@ export default function LeadDetailPage({
               >
                 Mobile Number
               </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="detail-mobile"
+                  data-ocid="lead.detail.mobile.input"
+                  value={mobile}
+                  onChange={(e) =>
+                    setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))
+                  }
+                  placeholder="10-digit mobile number"
+                  maxLength={10}
+                  inputMode="numeric"
+                  className="h-11 font-mono text-base flex-1"
+                />
+                {mobile && (
+                  <a
+                    href={`tel:${mobile}`}
+                    className="w-10 h-10 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center flex-shrink-0 transition-colors"
+                    title="Call"
+                  >
+                    <Phone className="w-4 h-4 text-gray-600" />
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label
+                htmlFor="detail-email"
+                className="text-sm font-semibold text-gray-700"
+              >
+                Email ID
+              </Label>
               <Input
-                id="detail-mobile"
-                data-ocid="lead.detail.mobile.input"
-                value={mobile}
-                onChange={(e) => setMobile(e.target.value)}
-                placeholder="10-digit mobile number"
-                maxLength={10}
-                inputMode="numeric"
-                className="h-11 font-mono text-base"
+                id="detail-email"
+                type="email"
+                data-ocid="lead.detail.email.input"
+                value={emailField}
+                onChange={(e) => setEmailField(e.target.value)}
+                placeholder="customer@email.com"
+                className="h-11"
               />
             </div>
+
             <div className="space-y-1.5">
               <Label
                 htmlFor="detail-name"
                 className="text-sm font-semibold text-gray-700"
               >
-                Name
+                Full Name
               </Label>
               <Input
                 id="detail-name"
@@ -243,6 +301,51 @@ export default function LeadDetailPage({
                 placeholder="Customer name"
                 className="h-11"
               />
+            </div>
+
+            {/* Quick contact action buttons */}
+            <div className="grid grid-cols-2 gap-2 pt-1">
+              {welcomeWhatsAppUrl ? (
+                <a
+                  href={welcomeWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-ocid="lead.detail.welcome_whatsapp.button"
+                  className="flex items-center justify-center gap-2 h-10 px-3 rounded-lg bg-green-500 hover:bg-green-600 text-white text-xs font-bold transition-colors"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  WhatsApp
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="flex items-center justify-center gap-2 h-10 px-3 rounded-lg bg-green-200 text-green-500 text-xs font-bold cursor-not-allowed opacity-60"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  WhatsApp
+                </button>
+              )}
+
+              {emailUrl ? (
+                <a
+                  href={emailUrl}
+                  data-ocid="lead.detail.email.button"
+                  className="flex items-center justify-center gap-2 h-10 px-3 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-xs font-bold transition-colors"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  Send Email
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="flex items-center justify-center gap-2 h-10 px-3 rounded-lg bg-blue-200 text-blue-400 text-xs font-bold cursor-not-allowed opacity-60"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  Send Email
+                </button>
+              )}
             </div>
           </div>
         </section>
@@ -515,7 +618,7 @@ export default function LeadDetailPage({
                   title={savedLink}
                 >
                   {savedLink.length > 38
-                    ? `${savedLink.slice(0, 38)}…`
+                    ? `${savedLink.slice(0, 38)}\u2026`
                     : savedLink}
                 </a>
                 <a
@@ -531,7 +634,7 @@ export default function LeadDetailPage({
           </div>
         </section>
 
-        {/* ACTIONS section */}
+        {/* QUICK ACTIONS section */}
         <section className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
           <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
@@ -627,7 +730,7 @@ export default function LeadDetailPage({
           className="w-full h-12 text-base font-bold bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-sm"
           data-ocid="lead.detail.save_button"
         >
-          {isSaving ? "Saving…" : "Save Changes"}
+          {isSaving ? "Saving\u2026" : "Save Changes"}
         </Button>
       </div>
     </div>

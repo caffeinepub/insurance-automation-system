@@ -1,20 +1,5 @@
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   CheckCircle2,
   Clock,
   DollarSign,
@@ -31,20 +16,20 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import LeadCard from "../components/LeadCard";
 import LeadDetailPage from "../components/LeadDetailPage";
+import NewLeadFormModal from "../components/NewLeadFormModal";
 import Sidebar from "../components/Sidebar";
-import { AGENTS, useApp } from "../context/AppContext";
+import { useApp } from "../context/AppContext";
 import type { Lead } from "../types";
 
 type Page = "dashboard" | "leads" | "reports" | "settings";
 type DashboardView = "list" | "detail";
 
 export default function DashboardPage() {
-  const { currentUser, leads, addLead, logout } = useApp();
+  const { currentUser, leads, logout } = useApp();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [view, setView] = useState<DashboardView>("list");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const [showNewLeadDialog, setShowNewLeadDialog] = useState(false);
-  const [newLeadAgent, setNewLeadAgent] = useState(AGENTS[0].email);
+  const [showNewLeadModal, setShowNewLeadModal] = useState(false);
 
   const isAdmin = currentUser?.role === "admin";
 
@@ -111,20 +96,14 @@ export default function DashboardPage() {
   };
 
   const handleAddLead = () => {
-    if (isAdmin) {
-      setNewLeadAgent(AGENTS[0].email);
-      setShowNewLeadDialog(true);
-    } else {
-      const agentEmail = currentUser?.email ?? "agent1@insurance.com";
-      addLead(agentEmail);
-      toast.success("New lead created!");
-    }
+    setShowNewLeadModal(true);
   };
 
-  const handleCreateLead = () => {
-    addLead(newLeadAgent);
-    toast.success("New lead created!");
-    setShowNewLeadDialog(false);
+  const handleLeadCreated = (leadId: string) => {
+    setShowNewLeadModal(false);
+    toast.success("Lead + Documents Saved Successfully!");
+    setSelectedLeadId(leadId);
+    setView("detail");
   };
 
   const summaryCards = [
@@ -395,52 +374,14 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* New Lead Dialog (Admin only) */}
-      <Dialog open={showNewLeadDialog} onOpenChange={setShowNewLeadDialog}>
-        <DialogContent className="sm:max-w-sm" data-ocid="new_lead.dialog">
-          <DialogHeader>
-            <DialogTitle>Assign New Lead</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="agent-select">Assign to Agent</Label>
-              <Select value={newLeadAgent} onValueChange={setNewLeadAgent}>
-                <SelectTrigger
-                  id="agent-select"
-                  className="h-11"
-                  data-ocid="new_lead.select"
-                >
-                  <SelectValue placeholder="Select agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {AGENTS.map((agent) => (
-                    <SelectItem key={agent.email} value={agent.email}>
-                      {agent.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowNewLeadDialog(false)}
-              className="flex-1"
-              data-ocid="new_lead.cancel_button"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateLead}
-              className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
-              data-ocid="new_lead.confirm_button"
-            >
-              Create Lead
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* New Lead Full Form Modal */}
+      <NewLeadFormModal
+        open={showNewLeadModal}
+        onClose={() => setShowNewLeadModal(false)}
+        onCreated={handleLeadCreated}
+        defaultAgent={isAdmin ? undefined : currentUser?.email}
+        isAdmin={isAdmin}
+      />
     </div>
   );
 }

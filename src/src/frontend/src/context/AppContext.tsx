@@ -1,6 +1,12 @@
 import type React from "react";
 import { createContext, useCallback, useContext, useState } from "react";
-import type { AppUser, Lead, ToastMessage, WorkflowStatus } from "../types";
+import type {
+  AppUser,
+  Lead,
+  LeadDocuments,
+  ToastMessage,
+  WorkflowStatus,
+} from "../types";
 
 export const AGENTS: AppUser[] = [
   {
@@ -38,6 +44,21 @@ export function getAgentName(email: string): string {
   return found ? found.name : email;
 }
 
+const DEFAULT_DOCUMENTS: LeadDocuments = {
+  rcFrontData: null,
+  rcBackData: null,
+  oldPolicyData: null,
+  panCardData: null,
+  aadhaarFrontData: null,
+  aadhaarBackData: null,
+  rcFrontType: null,
+  rcBackType: null,
+  oldPolicyType: null,
+  panCardType: null,
+  aadhaarFrontType: null,
+  aadhaarBackType: null,
+};
+
 function generateMobile(): string {
   const prefixes = ["6", "7", "8", "9"];
   const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
@@ -56,6 +77,7 @@ function createDefaultLead(overrides: Partial<Lead> = {}): Lead {
     id: generateId(),
     name: "",
     mobileNumber: generateMobile(),
+    email: "",
     assignedAgent: "agent1@insurance.com",
     workflowStatus: "Docs Pending",
     rcStatus: "Docs Pending",
@@ -83,6 +105,7 @@ function createDefaultLead(overrides: Partial<Lead> = {}): Lead {
     rating: null,
     currentStep: 1,
     docsUploaded: { rcFront: false, rcBack: false, oldPolicy: false },
+    documents: { ...DEFAULT_DOCUMENTS },
     createdAt: new Date().toISOString(),
     policyAmount: 0,
     commissionPercent: 0,
@@ -95,6 +118,7 @@ const SEED_LEADS: Lead[] = [
     id: "lead001",
     name: "Priya Sharma",
     mobileNumber: "9876543210",
+    email: "priya.sharma@email.com",
     assignedAgent: "agent1@insurance.com",
     workflowStatus: "Completed",
     rcStatus: "Docs Received",
@@ -130,6 +154,7 @@ const SEED_LEADS: Lead[] = [
     id: "lead002",
     name: "Arjun Mehta",
     mobileNumber: "8765432109",
+    email: "",
     assignedAgent: "agent2@insurance.com",
     workflowStatus: "KYC Pending",
     rcStatus: "Docs Received",
@@ -163,6 +188,7 @@ const SEED_LEADS: Lead[] = [
     id: "lead003",
     name: "Sunita Patel",
     mobileNumber: "7654321098",
+    email: "",
     assignedAgent: "agent1@insurance.com",
     workflowStatus: "Payment Sent",
     rcStatus: "Docs Received",
@@ -196,6 +222,7 @@ const SEED_LEADS: Lead[] = [
     id: "lead004",
     name: "Vikram Nair",
     mobileNumber: "9123456789",
+    email: "",
     assignedAgent: "agent3@insurance.com",
     workflowStatus: "Completed",
     rcStatus: "Docs Received",
@@ -231,6 +258,7 @@ const SEED_LEADS: Lead[] = [
     id: "lead005",
     name: "",
     mobileNumber: "8234567890",
+    email: "",
     assignedAgent: "agent2@insurance.com",
     workflowStatus: "Docs Pending",
     rcStatus: "Docs Pending",
@@ -264,6 +292,7 @@ const SEED_LEADS: Lead[] = [
     id: "lead006",
     name: "Divya Reddy",
     mobileNumber: "6345678901",
+    email: "",
     assignedAgent: "agent3@insurance.com",
     workflowStatus: "Quotation Ready",
     rcStatus: "Docs Received",
@@ -295,12 +324,25 @@ const SEED_LEADS: Lead[] = [
   }),
 ];
 
+export interface NewLeadFormData {
+  name: string;
+  mobileNumber: string;
+  email: string;
+  assignedAgent: string;
+  claim: boolean | null;
+  ncb: number;
+  ownerChange: boolean | null;
+  documents: LeadDocuments;
+  docsUploaded: { rcFront: boolean; rcBack: boolean; oldPolicy: boolean };
+}
+
 interface AppContextType {
   currentUser: AppUser | null;
   leads: Lead[];
   login: (email: string, password: string) => boolean;
   logout: () => void;
-  addLead: (assignedAgent?: string) => void;
+  addLead: (assignedAgent?: string) => string;
+  addLeadFromForm: (data: NewLeadFormData) => string;
   updateLead: (id: string, updates: Partial<Lead>) => void;
   toasts: ToastMessage[];
   addToast: (type: ToastMessage["type"], message: string) => void;
@@ -344,10 +386,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCurrentUser(null);
   }, []);
 
-  const addLead = useCallback((assignedAgent?: string) => {
+  const addLead = useCallback((assignedAgent?: string): string => {
     const agent = assignedAgent ?? "agent1@insurance.com";
     const newLead = createDefaultLead({ assignedAgent: agent });
     setLeads((prev) => [newLead, ...prev]);
+    return newLead.id;
+  }, []);
+
+  const addLeadFromForm = useCallback((data: NewLeadFormData): string => {
+    const newLead = createDefaultLead({
+      ...data,
+      workflowStatus: "Docs Pending",
+      rcStatus:
+        data.docsUploaded.rcFront && data.docsUploaded.rcBack
+          ? "Docs Received"
+          : "Docs Pending",
+    });
+    setLeads((prev) => [newLead, ...prev]);
+    return newLead.id;
   }, []);
 
   const updateLead = useCallback((id: string, updates: Partial<Lead>) => {
@@ -364,6 +420,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         addLead,
+        addLeadFromForm,
         updateLead,
         toasts,
         addToast,

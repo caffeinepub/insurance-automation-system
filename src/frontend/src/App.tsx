@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useState } from "react";
+import UpdateNotificationBanner from "./components/UpdateNotificationBanner";
 import { AppProvider, useApp } from "./context/AppContext";
 import CustomerTrackingPage from "./pages/CustomerTrackingPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -16,6 +17,7 @@ function AppInner() {
       <>
         <CustomerTrackingPage onBack={() => setView("main")} />
         <Toaster position="bottom-right" richColors />
+        <UpdateNotificationBanner />
       </>
     );
   }
@@ -28,6 +30,7 @@ function AppInner() {
         <LoginPage onTrackPolicy={() => setView("customer-tracking")} />
       )}
       <Toaster position="bottom-right" richColors />
+      <UpdateNotificationBanner />
     </>
   );
 }

@@ -30,10 +30,27 @@ export interface AppUser {
   role: UserRole;
 }
 
+export interface LeadDocuments {
+  rcFrontData: string | null; // data URL (PDF or image)
+  rcBackData: string | null;
+  oldPolicyData: string | null;
+  panCardData: string | null;
+  aadhaarFrontData: string | null;
+  aadhaarBackData: string | null;
+  // File type metadata
+  rcFrontType: string | null;
+  rcBackType: string | null;
+  oldPolicyType: string | null;
+  panCardType: string | null;
+  aadhaarFrontType: string | null;
+  aadhaarBackType: string | null;
+}
+
 export interface Lead {
   id: string;
   name: string;
   mobileNumber: string;
+  email: string;
   assignedAgent: string;
   workflowStatus: WorkflowStatus;
   rcStatus: string;
@@ -65,6 +82,7 @@ export interface Lead {
     rcBack: boolean;
     oldPolicy: boolean;
   };
+  documents: LeadDocuments;
   createdAt: string;
   // Business tracking fields (set when status = Completed)
   policyAmount: number;

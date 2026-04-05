@@ -1,15 +1,21 @@
-const CACHE_NAME = 'pb-insurance-v1';
+const CACHE_NAME = 'pb-insurance-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
 ];
 
-// Install: cache static shell
+// Install: cache static shell (do NOT skipWaiting here — let the app prompt)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
   );
-  self.skipWaiting();
+});
+
+// Listen for SKIP_WAITING message from the app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Activate: clean old caches
