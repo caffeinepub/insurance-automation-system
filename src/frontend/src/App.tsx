@@ -1,8 +1,8 @@
 import { Toaster } from "@/components/ui/sonner";
 import { useState } from "react";
-import FloatingAIChat from "./components/FloatingAIChat";
 import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import InstallAppBanner from "./components/InstallAppBanner";
+import PriyaAssistant from "./components/PriyaAssistant";
 import UpdateNotificationBanner from "./components/UpdateNotificationBanner";
 import { AppProvider, useApp } from "./context/AppContext";
 import AdminControlPanel from "./pages/AdminControlPanel";
@@ -45,7 +45,7 @@ function AppInner() {
       ) : (
         <LoginPage onTrackPolicy={() => setView("customer-tracking")} />
       )}
-      {currentUser && <FloatingAIChat />}
+      {currentUser && <PriyaAssistant />}
       <FloatingWhatsApp />
       <Toaster position="bottom-right" richColors />
       <UpdateNotificationBanner />
