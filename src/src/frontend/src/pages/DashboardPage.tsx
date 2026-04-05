@@ -15,7 +15,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Award,
   CheckCircle2,
   Clock,
   DollarSign,
@@ -101,36 +100,6 @@ export default function DashboardPage() {
     };
   }, [visibleLeads]);
 
-  // Per-agent breakdown (admin only)
-  const agentBreakdown = useMemo(() => {
-    if (!isAdmin) return [];
-    return AGENTS.map((agent) => {
-      const agentLeads = leads.filter(
-        (l) =>
-          l.assignedAgent === agent.email && l.workflowStatus === "Completed",
-      );
-      const business = agentLeads.reduce(
-        (sum, l) => sum + (l.policyAmount || 0),
-        0,
-      );
-      const commission = agentLeads.reduce(
-        (sum, l) =>
-          sum +
-          Math.round(
-            ((l.policyAmount || 0) * (l.commissionPercent || 0)) / 100,
-          ),
-        0,
-      );
-      return {
-        name: agent.name,
-        email: agent.email,
-        policies: agentLeads.length,
-        business,
-        commission,
-      };
-    }).filter((a) => a.policies > 0 || true); // show all agents
-  }, [leads, isAdmin]);
-
   const handleOpenLead = (lead: Lead) => {
     setSelectedLeadId(lead.id);
     setView("detail");
@@ -195,11 +164,11 @@ export default function DashboardPage() {
       bg: "bg-teal-50",
     },
     {
-      label: "Commission",
-      value: `\u20b9${stats.totalCommission.toLocaleString("en-IN")}`,
-      icon: Award,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50",
+      label: "Avg Rating",
+      value: stats.avgRating ? `${stats.avgRating} \u2b50` : "N/A",
+      icon: Star,
+      color: "text-yellow-600",
+      bg: "bg-yellow-50",
     },
   ];
 
@@ -353,114 +322,6 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
-
-              {/* Agent Commission Breakdown (Admin only) */}
-              {isAdmin && (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <div className="flex items-center gap-2 px-4 py-3.5 border-b border-gray-100">
-                    <Award className="w-4 h-4 text-emerald-500" />
-                    <h2 className="text-sm font-bold text-gray-900">
-                      Commission by Agent
-                    </h2>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="bg-gray-50 border-b border-gray-100">
-                          <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            Agent
-                          </th>
-                          <th className="text-center px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            Policies
-                          </th>
-                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            Business (₹)
-                          </th>
-                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            Commission (₹)
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {agentBreakdown.map((agent, idx) => (
-                          <tr
-                            key={agent.email}
-                            className={`border-b border-gray-50 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}
-                          >
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xs font-bold flex-shrink-0">
-                                  {agent.name.charAt(0)}
-                                </div>
-                                <span className="font-medium text-gray-800 text-sm">
-                                  {agent.name}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-center">
-                              <span
-                                className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                                  agent.policies > 0
-                                    ? "bg-green-100 text-green-700"
-                                    : "bg-gray-100 text-gray-400"
-                                }`}
-                              >
-                                {agent.policies}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-right font-mono font-semibold text-gray-800">
-                              {agent.business > 0 ? (
-                                `₹${agent.business.toLocaleString("en-IN")}`
-                              ) : (
-                                <span className="text-gray-300 font-normal">
-                                  —
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              {agent.commission > 0 ? (
-                                <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold font-mono text-xs border border-emerald-100">
-                                  ₹{agent.commission.toLocaleString("en-IN")}
-                                </span>
-                              ) : (
-                                <span className="text-gray-300">—</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                        {/* Totals row */}
-                        <tr className="bg-gray-50 border-t-2 border-gray-200">
-                          <td className="px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">
-                            Total
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <span className="text-xs font-bold text-gray-700">
-                              {agentBreakdown.reduce(
-                                (s, a) => s + a.policies,
-                                0,
-                              )}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-right font-mono font-bold text-gray-900">
-                            ₹
-                            {agentBreakdown
-                              .reduce((s, a) => s + a.business, 0)
-                              .toLocaleString("en-IN")}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold font-mono text-xs border border-emerald-200">
-                              ₹
-                              {agentBreakdown
-                                .reduce((s, a) => s + a.commission, 0)
-                                .toLocaleString("en-IN")}
-                            </span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
 
               {/* Lead List */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-xs">
