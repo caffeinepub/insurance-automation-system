@@ -27,8 +27,9 @@ export function useActor() {
 
       const actor = await createActorWithConfig(actorOptions);
       const adminToken = getSecretParameter("caffeineAdminToken") || "";
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (actor as any)._initializeAccessControlWithSecret(adminToken);
+      await (
+        actor as unknown as Record<string, (token: string) => Promise<void>>
+      )._initializeAccessControlWithSecret(adminToken);
       return actor;
     },
     // Only refetch when identity changes

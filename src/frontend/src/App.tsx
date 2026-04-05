@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { useState } from "react";
 import FloatingAIChat from "./components/FloatingAIChat";
 import FloatingWhatsApp from "./components/FloatingWhatsApp";
+import InstallAppBanner from "./components/InstallAppBanner";
 import UpdateNotificationBanner from "./components/UpdateNotificationBanner";
 import { AppProvider, useApp } from "./context/AppContext";
 import AdminControlPanel from "./pages/AdminControlPanel";
@@ -21,6 +22,7 @@ function AppInner() {
         <CustomerTrackingPage onBack={() => setView("main")} />
         <Toaster position="bottom-right" richColors />
         <UpdateNotificationBanner />
+        <InstallAppBanner />
       </>
     );
   }
@@ -31,6 +33,7 @@ function AppInner() {
         <AdminControlPanel onBack={() => setView("main")} />
         <Toaster position="bottom-right" richColors />
         <UpdateNotificationBanner />
+        <InstallAppBanner />
       </>
     );
   }
@@ -46,6 +49,7 @@ function AppInner() {
       <FloatingWhatsApp />
       <Toaster position="bottom-right" richColors />
       <UpdateNotificationBanner />
+      <InstallAppBanner />
     </>
   );
 }

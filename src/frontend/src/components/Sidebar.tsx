@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Download,
   HelpCircle,
   LayoutDashboard,
   LogOut,
@@ -9,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
+import { useInstallPrompt } from "../hooks/useInstallPrompt";
 
 type Page = "dashboard" | "leads" | "reports" | "settings";
 
@@ -36,6 +38,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const { currentUser, logout } = useApp();
   const isAdmin = currentUser?.role === "admin";
+  const { canInstall, isInstalled, triggerInstall } = useInstallPrompt();
 
   return (
     <aside
@@ -92,6 +95,29 @@ export default function Sidebar({
           >
             <ShieldCheck className="w-5 h-5 flex-shrink-0" />
             Admin Panel
+          </button>
+        )}
+
+        {/* Install App button – shown only if not yet installed */}
+        {!isInstalled && (
+          <button
+            type="button"
+            onClick={canInstall ? triggerInstall : undefined}
+            disabled={!canInstall}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mt-2 ${
+              canInstall
+                ? "bg-green-600/20 text-green-400 hover:bg-green-600/30 hover:text-green-300"
+                : "text-slate-500 cursor-default"
+            }`}
+            data-ocid="sidebar.install_app.button"
+            title={
+              canInstall
+                ? "Install app on your device"
+                : "Open in Chrome/Edge on Android to install"
+            }
+          >
+            <Download className="w-5 h-5 flex-shrink-0" />
+            Install App
           </button>
         )}
       </nav>

@@ -11,16 +11,21 @@ import {
 import {
   ArrowLeft,
   Bell,
+  ChevronLeft,
+  ChevronRight,
+  Download,
   ExternalLink,
+  Eye,
   FileImage,
   Link2,
   MessageCircle,
   UserCheck,
+  X,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AGENTS, useApp } from "../context/AppContext";
-import { type Lead, WORKFLOW_STATUSES, type WorkflowStatus } from "../types";
+import { WORKFLOW_STATUSES, type WorkflowStatus } from "../types";
 import { statusConfig } from "./LeadCard";
 
 interface LeadDetailPageProps {
@@ -85,6 +90,182 @@ function buildFollowUpUrl(mobileRaw: string): string | null {
   return `https://wa.me/${phone}?text=${encodeURIComponent("Reminder: Please complete your insurance process.")}`;
 }
 
+function isPdf(url: string): boolean {
+  return (
+    url.startsWith("data:application/pdf") || url.toLowerCase().endsWith(".pdf")
+  );
+}
+
+function downloadDoc(url: string, label: string) {
+  const filename = label.replace(/\s+/g, "_") + (isPdf(url) ? ".pdf" : ".jpg");
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ─── Document Viewer Modal ────────────────────────────────────────────────────
+interface DocViewerProps {
+  docs: { label: string; url: string }[];
+  initialIndex: number;
+  onClose: () => void;
+}
+
+function DocViewerModal({ docs, initialIndex, onClose }: DocViewerProps) {
+  const [current, setCurrent] = useState(initialIndex);
+  const doc = docs[current];
+  const total = docs.length;
+
+  const goPrev = useCallback(
+    () => setCurrent((i) => (i - 1 + total) % total),
+    [total],
+  );
+  const goNext = useCallback(() => setCurrent((i) => (i + 1) % total), [total]);
+
+  // Keyboard navigation + escape to close
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") goPrev();
+      else if (e.key === "ArrowRight") goNext();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onClose, goPrev, goNext]);
+
+  // Prevent body scroll while modal is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      data-ocid="lead.docs.modal"
+    >
+      {/* Backdrop */}
+      <div
+        role="button"
+        tabIndex={-1}
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm cursor-default"
+        onClick={onClose}
+        onKeyDown={(e) => e.key === "Escape" && onClose()}
+        aria-label="Close document viewer"
+      />
+
+      {/* Panel */}
+      <div className="relative z-10 w-full sm:max-w-lg sm:mx-4 bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col max-h-[92dvh] overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100">
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+              Document
+            </p>
+            <h2 className="text-base font-bold text-gray-900 truncate">
+              {doc.label}
+            </h2>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => downloadDoc(doc.url, doc.label)}
+            className="w-9 h-9 text-blue-600 hover:bg-blue-50"
+            title={`Download ${doc.label}`}
+            data-ocid="lead.docs.modal.download_button"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="w-9 h-9 text-gray-500 hover:bg-gray-100"
+            aria-label="Close viewer"
+            data-ocid="lead.docs.modal.close_button"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Document display */}
+        <div className="flex-1 overflow-hidden bg-gray-950 flex items-center justify-center">
+          {isPdf(doc.url) ? (
+            <iframe
+              src={doc.url}
+              title={doc.label}
+              className="w-full h-full min-h-[50dvh]"
+              style={{ border: "none" }}
+            />
+          ) : (
+            <img
+              src={doc.url}
+              alt={doc.label}
+              className="max-w-full max-h-[65dvh] object-contain"
+            />
+          )}
+        </div>
+
+        {/* Navigation footer */}
+        {total > 1 && (
+          <div className="flex items-center gap-3 px-4 py-3 border-t border-gray-100 bg-white">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goPrev}
+              className="w-9 h-9 flex-shrink-0"
+              aria-label="Previous document"
+              data-ocid="lead.docs.modal.pagination_prev"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+
+            {/* Dot indicators */}
+            <div className="flex-1 flex items-center justify-center gap-1.5">
+              {docs.map((d, i) => (
+                <button
+                  key={d.label}
+                  type="button"
+                  onClick={() => setCurrent(i)}
+                  className={`rounded-full transition-all ${
+                    i === current
+                      ? "w-5 h-2 bg-gray-900"
+                      : "w-2 h-2 bg-gray-300 hover:bg-gray-400"
+                  }`}
+                  aria-label={`View ${d.label}`}
+                />
+              ))}
+            </div>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={goNext}
+              className="w-9 h-9 flex-shrink-0"
+              aria-label="Next document"
+              data-ocid="lead.docs.modal.pagination_next"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+
+        {/* Single doc — count label */}
+        {total === 1 && (
+          <div className="px-4 py-2 border-t border-gray-100 bg-white text-center">
+            <p className="text-xs text-gray-400">1 of 1 document</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function LeadDetailPage({
   leadId,
   onBack,
@@ -105,6 +286,10 @@ export default function LeadDetailPage({
   const [isSaving, setIsSaving] = useState(false);
   const [policyAmount, setPolicyAmount] = useState<number>(0);
   const [commissionPercent, setCommissionPercent] = useState<number>(0);
+
+  // Document viewer state
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   // Initialize form fields when lead loads or changes
   if (lead && initializedIdRef.current !== lead.id) {
@@ -188,6 +373,11 @@ export default function LeadDetailPage({
     { label: "Aadhaar Front", url: lead.aadhaarFrontUrl },
     { label: "Aadhaar Back", url: lead.aadhaarBackUrl },
   ].filter((d): d is { label: string; url: string } => !!d.url);
+
+  const openViewer = (index: number) => {
+    setViewerIndex(index);
+    setViewerOpen(true);
+  };
 
   return (
     <div className="min-h-full bg-background">
@@ -548,11 +738,16 @@ export default function LeadDetailPage({
             data-ocid="lead.docs.section"
           >
             <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-              <div className="flex items-center gap-2">
-                <FileImage className="w-3.5 h-3.5 text-blue-500" />
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                  Uploaded Documents
-                </p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileImage className="w-3.5 h-3.5 text-blue-500" />
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Uploaded Documents
+                  </p>
+                </div>
+                <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                  {docItems.length} file{docItems.length !== 1 ? "s" : ""}
+                </span>
               </div>
             </div>
             <div className="p-4">
@@ -560,17 +755,72 @@ export default function LeadDetailPage({
                 {docItems.map((doc, idx) => (
                   <div
                     key={doc.label}
-                    className="border border-gray-200 rounded-xl p-2 overflow-hidden"
+                    className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-xs hover:shadow-sm transition-shadow"
                     data-ocid={`lead.docs.item.${idx + 1}`}
                   >
-                    <p className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">
-                      {doc.label}
-                    </p>
-                    <img
-                      src={doc.url}
-                      alt={doc.label}
-                      className="w-full h-20 object-cover rounded-lg bg-gray-100"
-                    />
+                    {/* Label */}
+                    <div className="px-2.5 pt-2.5 pb-1">
+                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wide truncate">
+                        {doc.label}
+                      </p>
+                    </div>
+
+                    {/* Thumbnail — clickable to open viewer */}
+                    <button
+                      type="button"
+                      onClick={() => openViewer(idx)}
+                      className="w-full block group relative"
+                      aria-label={`View ${doc.label}`}
+                    >
+                      {isPdf(doc.url) ? (
+                        <div className="w-full h-24 flex flex-col items-center justify-center bg-red-50 border-y border-gray-100 gap-1">
+                          <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                            <span className="text-[9px] font-bold text-red-600 uppercase">
+                              PDF
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-red-500 font-medium">
+                            PDF Document
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <img
+                            src={doc.url}
+                            alt={doc.label}
+                            className="w-full h-24 object-cover border-y border-gray-100"
+                          />
+                          {/* Hover overlay */}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <Eye className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
+                          </div>
+                        </div>
+                      )}
+                    </button>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-1.5 p-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openViewer(idx)}
+                        className="flex-1 h-8 text-xs font-semibold gap-1 text-blue-700 border-blue-200 hover:bg-blue-50"
+                        data-ocid={`lead.docs.view_button.${idx + 1}`}
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                        View
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => downloadDoc(doc.url, doc.label)}
+                        className="flex-1 h-8 text-xs font-semibold gap-1 text-gray-700 border-gray-200 hover:bg-gray-50"
+                        data-ocid={`lead.docs.download_button.${idx + 1}`}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Save
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -677,6 +927,15 @@ export default function LeadDetailPage({
           {isSaving ? "Saving\u2026" : "Save Changes"}
         </Button>
       </div>
+
+      {/* Document Viewer Modal */}
+      {viewerOpen && docItems.length > 0 && (
+        <DocViewerModal
+          docs={docItems}
+          initialIndex={viewerIndex}
+          onClose={() => setViewerOpen(false)}
+        />
+      )}
     </div>
   );
 }
