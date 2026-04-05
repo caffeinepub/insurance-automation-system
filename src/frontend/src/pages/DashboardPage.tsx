@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Clock,
   DollarSign,
+  ExternalLink,
   FileText,
   Plus,
   Star,
@@ -179,6 +180,16 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
+                <a
+                  href="https://www.pbpartners.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm"
+                  data-ocid="header.pb_portal.button"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open PB Portal
+                </a>
                 <button
                   type="button"
                   className="relative p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white border border-gray-200 transition-colors"
