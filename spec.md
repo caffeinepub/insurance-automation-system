@@ -1,59 +1,105 @@
-# PB Insurance AI - Premium SaaS UI Upgrade
+# PB Insurance AI — Priya Dual Dashboard Training (Version 40)
 
 ## Current State
 
-The app has a functional but standard light-mode UI with:
-- White card dashboard on gray background
-- Flat sidebar with dark navy (`oklch(0.13-0.17 0.015 255)`) gradient
-- Small KPI cards (3-column mobile, 6-column desktop) with light colored backgrounds (bg-blue-50, bg-purple-50, etc.)
-- Standard shadcn buttons (gray-900 / blue-600)
-- Lead cards: white border cards on white background
-- StatusBadge: light pastel backgrounds (bg-orange-100, text-orange-800) — light-mode only
-- PriyaAssistant floating button: purple/indigo gradient
-- Login page: dark navy gradient background with white card form
-- Footer: plain text "Powered by Prashant Chandratre | 7709446589"
-- No glassmorphism, no glow effects, no animated shimmer
-- Header subtitle says only "by Prashant" / "Insurance Automation System"
+Priya AI (`PriyaAssistant.tsx`) is a unified chat+voice assistant with:
+- Dynamic response generation via `generateSmartPriyaReply(userMsg, lastTopic, leads, setLastTopic, conversationHistory)`
+- 25+ insurance-topic builders (NCB, IDV, claim, premium, PB Portal text guidance, quotation, payment, documents, etc.)
+- `lastTopic` string tracking for basic continuity
+- Lead data integration: aggregate-only checks (count of leads with missing docs, count with payment pending)
+- No stateful multi-step workflow — all step guidance is embedded in plain text responses
+- No per-lead deep inspection (no reading individual lead names, vehicle numbers, NCB values, specific doc status)
+- PB Portal guidance is static text only — no step-by-step tracking, no RC mismatch detection
 
 ## Requested Changes (Diff)
 
 ### Add
-- Full dark-mode premium theme: deep navy-to-indigo gradient background app-wide
-- Glassmorphism cards: backdrop-blur, semi-transparent white/blue borders, frosted effect
-- Large KPI cards on dashboard: Total Leads, Business ₹, Commission ₹, Conversion % — with gradient icon backgrounds and large readable numbers
-- "Priya AI Assistant" card on dashboard: shows status Active 🟢, glowing animated voice/mic icon, pulsing ring
-- Welcome text: "Welcome back! Priya is ready to help you close more deals 💰"
-- Header branding upgrade: add subtitle "AI Insurance Trainer 🚀" and tagline "Train • Guide • Close Faster 💰"
-- Gradient buttons with glow box-shadow effect (rounded-full or rounded-xl)
-- Color-coded status badges redesigned for dark background (glow/neon effect)
-- Loading shimmer animation using CSS keyframes on skeleton/placeholder elements
-- Smooth entrance animations on cards (fade-up on mount, staggered)
-- Footer: "Powered by Prashant Chandratre | 7709446589" styled prominently
+
+1. **Workflow State Engine** inside Priya:
+   - A `priyaWorkflow` state object tracking: `{ phase, subStep, activeLead, pbPortalStep, awaitingInput }`
+   - Phases: `idle | app_dashboard | pb_portal | quotation | document_flow | customer_response | payment_flow`
+   - `pbPortalStep`: 0–5 tracking (vehicle_entry → fuel_check → variant_check → rc_match → quote_ready → complete)
+
+2. **App Dashboard Mode** — when Priya detects "dashboard", "lead", "status", "check" or agent asks about a specific lead:
+   - Read the active lead from context (most recent lead or agent's leads)
+   - Report: name, vehicle, status, missing documents, next recommended step
+   - Alert if critical data missing (no mobile, no RC, no PAN)
+   - Suggest exact next action in short, clear Hindi+English
+
+3. **PB Portal Step-by-Step Guide Mode** — when agent says "PB portal start", "quotation leni hai", "portal pe jaana hai", "vehicle number":
+   - Track step number in state
+   - Step 1: Vehicle Number entry guidance + warn to match RC exactly
+   - Step 2: Fuel type check (Petrol/Diesel/CNG/EV) — cross-check with RC data if available
+   - Step 3: Variant/model check — warn to match RC exactly
+   - Step 4: RC match verification — detect mismatch if lead has RC data
+   - Step 5: Quotation generation — prompt to check all plans
+   - Warn on each step if lead data is available and a mismatch is likely
+   - Advance step on user confirmation ("ho gaya", "done", "next", "aage", "ok")
+
+4. **Quotation Flow Guidance**:
+   - After Step 5 (quotation ready), guide agent to compare all plan tiers
+   - Suggest highest-payout plan selection criteria (comprehensive, zero dep, higher IDV)
+   - Ask agent to take screenshot of quotation
+
+5. **Document Flow**:
+   - After quotation confirmed, ask agent to upload screenshot/PDF of quotation
+   - Remind to save in lead documents section
+   - Guide to send to customer via WhatsApp (with pre-filled message hint)
+
+6. **Customer Response Handling**:
+   - If agent reports "customer agreed" / "customer ne haan kaha" / "policy banao":
+     - Guide through policy creation steps on PB Portal
+     - KYC completion guidance
+
+7. **Payment Flow**:
+   - Guide to generate payment link on PB Portal
+   - Instruct to paste payment link in the lead's Payment Link field in the app
+   - Guide to send via WhatsApp button
+
+8. **Context Awareness** (always knows current step):
+   - Store `priyaWorkflow` phase in component state (not just `lastTopic`)
+   - Each reply appends: "Next step: [konkret action]" at the bottom
+   - If workflow phase is active, every message acknowledges current phase
+
+9. **Error Detection**:
+   - In app dashboard mode: detect and alert for missing mobile, missing RC, missing PAN/Aadhaar
+   - In PB portal mode: detect fuel/variant mismatch if RC data is in the lead
+   - In payment mode: alert if payment link field is empty in lead
+   - Alert formatting: "⚠️ Warning: [issue]"
+
+10. **Quick Chips Update**:
+    - Add: "App Dashboard Check", "PB Portal Start", "Quotation Guide", "Document Upload", "Payment Link"
+    - Keep existing: NCB, Claim, Zero Dep, Premium, Help
 
 ### Modify
-- `index.css`: Override CSS variables to switch to dark navy theme; add shimmer keyframe, glow utilities, glassmorphism utility class
-- `LoginPage.tsx`: Upgrade to premium dark glass card design; enhance header with new tagline; keep all functionality intact
-- `DashboardPage.tsx`: Replace small KPI cards with large premium KPI cards (4 primary: Total Leads, Business ₹, Commission ₹, Conversion %); add Priya AI Assistant card; update welcome text; add entrance animations
-- `Sidebar.tsx`: Upgrade to glassmorphism panel with glowing active item, enhanced branding with new taglines
-- `LeadCard.tsx`: Dark glass card style, animated hover, status badges with neon/glow colors for dark bg
-- `StatusBadge.tsx`: Dark-mode aware badge colors with slight glow
-- Mobile header: upgrade to match dark premium theme
+
+1. **`generateSmartPriyaReply`** — add `priyaWorkflow` param and `setWorkflow` setter so step tracking integrates into reply generation
+2. **`buildPbPortalReply`** — replace static text with dynamic step-specific guidance based on current `pbPortalStep`
+3. **`buildDocumentsReply`** — add per-lead detail: show lead name + which specific docs are missing (not just count)
+4. **`buildPaymentReply`** — add per-lead detail: show lead name + payment status
+5. **Quick chips array** — update with 5 new chips replacing less-used ones
+6. **Main `processUserMessage` handler** — advance `priyaWorkflow` state based on confirmation keywords
 
 ### Remove
-- All `bg-white`, `border-gray-200`, `bg-gray-50` styles on main dashboard surfaces (replace with glass/dark equivalents)
-- Light pastel badge backgrounds from StatusBadge (replace with dark semi-transparent neon versions)
+
+- None — all existing functionality preserved
 
 ## Implementation Plan
 
-1. **index.css**: Add dark theme CSS variables, shimmer keyframe (`@keyframes shimmer`), glow utility, glass utility class. Set body background to deep navy-indigo gradient.
-2. **LoginPage.tsx**: Dark gradient background (already dark), upgrade card to glassmorphism (backdrop-blur, border-white/10, bg-white/5), enhance branding with new subtitle lines, gradient submit button with glow.
-3. **Sidebar.tsx**: Add new taglines under logo ("AI Insurance Trainer 🚀" + "Train • Guide • Close Faster 💰"), glassmorphism panel, glowing active nav item.
-4. **DashboardPage.tsx**:
-   - Replace 6 small cards with 4 large premium KPI cards (Total Leads, Business ₹, Commission ₹, Conversion %). Conversion = (completed/totalLeads)*100.
-   - Add "Priya AI Assistant" feature card (status Active 🟢, glowing pulse icon).
-   - Update welcome/greeting text to: "Welcome back! Priya is ready to help you close more deals 💰"
-   - All sections use glass card style.
-   - Entrance animations (translate-y + opacity fade).
-5. **LeadCard.tsx**: Glass dark card, smooth hover scale, status badge with glow colors.
-6. **StatusBadge.tsx**: Dark-background-aware badge palette with neon accent colors.
-7. **Buttons** throughout: gradient blue/indigo, rounded-xl, box-shadow glow.
+1. Define `PriyaWorkflow` interface with `phase`, `subStep` (pbPortalStep 0–5), `activeLead`, `awaitingInput`
+2. Add `priyaWorkflow` state to `PriyaAssistant` component, initialized to `{ phase: 'idle', subStep: 0 }`
+3. Add workflow phase detection in `processUserMessage`:
+   - PB portal triggers: set phase to `pb_portal`, subStep to 0
+   - Dashboard triggers: set phase to `app_dashboard`
+   - Quotation triggers: set phase to `quotation`
+   - Confirmation keywords: advance subStep
+   - Payment triggers: set phase to `payment_flow`
+4. Add `buildAppDashboardReply(ctx, leads, workflow)` — reads leads, returns status summary + next step
+5. Upgrade `buildPbPortalReply` → `buildPbPortalStepReply(ctx, step, activeLead)` — returns step-specific instruction
+6. Add `buildQuotationFlowReply(ctx, step)` — covers quotation comparison + screenshot guidance
+7. Add `buildDocumentFlowReply(ctx, leads, activeLead)` — upload prompt + WhatsApp send guidance
+8. Add `buildCustomerResponseReply(ctx)` — policy creation guidance
+9. Add `buildPaymentFlowReply(ctx, leads, activeLead)` — payment link generation + WhatsApp guide
+10. Add `detectErrors(leads, workflow)` — returns array of error strings to prepend to any reply when in active workflow
+11. Update quick chips array with 5 new workflow chips
+12. Wire all new builders into `generateSmartPriyaReply` dispatch logic

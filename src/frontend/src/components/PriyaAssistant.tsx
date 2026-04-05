@@ -54,6 +54,21 @@ interface ChatMessage {
 
 type VoiceState = "idle" | "listening" | "processing" | "speaking";
 
+// ---- Workflow State ----
+
+interface PriyaWorkflow {
+  phase:
+    | "idle"
+    | "app_dashboard"
+    | "pb_portal"
+    | "quotation"
+    | "document_flow"
+    | "customer_response"
+    | "payment_flow";
+  pbPortalStep: number; // 0-5: 0=vehicle_entry, 1=fuel_check, 2=variant_check, 3=rc_match, 4=quote_generation, 5=complete
+  activeLead: Lead | null; // currently focused lead
+}
+
 export interface PriyaAssistantProps {
   onOpenNewLead?: () => void;
   externalOpen?: boolean;
@@ -744,6 +759,154 @@ Main is topic pe help kar sakti hoon — thoda aur specific batao? Jaise:
 Main motor insurance ke baare mein poori detail de sakti hoon — sirf topic clearly batao! 😊`;
 }
 
+// ---- Workflow-Aware Reply Builders ----
+
+function buildAppDashboardReply(
+  leads: Lead[],
+  _workflow: PriyaWorkflow,
+): string {
+  if (leads.length === 0) {
+    return "Abhi koi lead nahi hai. Naya lead add karne ke liye Dashboard pe 'New Lead' button use karein. \uD83D\uDE0A";
+  }
+
+  const total = leads.length;
+  const completed = leads.filter(
+    (l) => l.workflowStatus === "Completed",
+  ).length;
+  const pending = total - completed;
+
+  const missingDocs = leads.filter(
+    (l) => !l.docsUploaded?.rcFront || !l.docsUploaded?.rcBack || !l.panUrl,
+  );
+
+  const paymentPending = leads.filter(
+    (l) =>
+      l.workflowStatus === "Quotation Ready" ||
+      l.workflowStatus === "PB Action Required",
+  );
+
+  const docsPending = leads.filter((l) => l.workflowStatus === "Docs Pending");
+
+  let actionItems = "";
+  const maxShow = 3;
+
+  if (missingDocs.length > 0) {
+    const shown = missingDocs.slice(0, maxShow);
+    for (const lead of shown) {
+      const missingList: string[] = [];
+      if (!lead.docsUploaded?.rcFront) missingList.push("RC Front");
+      if (!lead.docsUploaded?.rcBack) missingList.push("RC Back");
+      if (!lead.panUrl) missingList.push("PAN");
+      const name = lead.name || `Mobile ${lead.mobileNumber}`;
+      actionItems += `\u2022 ${name}: Documents missing (${missingList.join(", ")}) \u2014 Status: ${lead.workflowStatus}\n`;
+    }
+    if (missingDocs.length > maxShow) {
+      actionItems += `\u2022 ...aur ${missingDocs.length - maxShow} leads mein documents incomplete\n`;
+    }
+  }
+
+  if (paymentPending.length > 0) {
+    const shown = paymentPending.slice(0, maxShow);
+    for (const lead of shown) {
+      const name = lead.name || `Mobile ${lead.mobileNumber}`;
+      actionItems += `\u2022 ${name}: Payment pending \u2014 Status: ${lead.workflowStatus}\n`;
+    }
+  }
+
+  let nextStep = "";
+  if (docsPending.length > 0) {
+    const first = docsPending[0];
+    const name = first.name || `Mobile ${first.mobileNumber}`;
+    nextStep = `${name} ke documents collect karein \u2014 ${docsPending.length} lead(s) mein docs missing hain.`;
+  } else if (paymentPending.length > 0) {
+    nextStep = `${paymentPending.length} lead(s) ke liye payment link send karein \u2014 sabse urgent action!`;
+  } else if (completed === total) {
+    nextStep =
+      "Sab leads complete hain! Naye leads add karein ya performance dashboard check karein. \uD83C\uDF89";
+  } else {
+    nextStep = "Pending leads ke status update karein aur follow-up karein.";
+  }
+
+  return `\uD83D\uDCCA App Dashboard Summary:\n\n\u2705 Total Leads: ${total} | Completed: ${completed} | Pending: ${pending}\n\n${actionItems.trim() ? `\u26A0\uFE0F Action Required:\n${actionItems.trim()}` : "\u2705 Sab leads on track hain!"}\n\n\uD83C\uDFAF Next Step: ${nextStep}\n\nKisi specific lead ke baare mein detail chahiye? Lead ka naam batayein. \uD83D\uDE0A`;
+}
+
+function buildPbPortalStepReply(step: number, activeLead: Lead | null): string {
+  const leadName = activeLead?.name || "current customer";
+  const vehicleNote = activeLead ? `\n\uD83D\uDCCB Lead: ${leadName}` : "";
+
+  switch (step) {
+    case 0:
+      return `\uD83D\uDE97 Step 1: Vehicle Number Entry${vehicleNote}\n\nPB Portal pe vehicle number EXACTLY dalein jaise RC mein likha hai.\n\u2705 Capital letters use karein (MH12AB1234)\n\u26A0\uFE0F Space ya dash mat dalein\n\u26A0\uFE0F Ek bhi character galat hoga toh galat data aayega!${activeLead?.mobileNumber ? `\n\nCustomer mobile: ${activeLead.mobileNumber} \u2014 inka RC saath rakhein!` : ""}\n\nHo gaya? 'Done' bolein ya type karein \u27A1\uFE0F`;
+
+    case 1:
+      return "\u26FD Step 2: Fuel Type Check\n\nRC mein jo fuel type likha hai wahi select karein:\n\u2022 Petrol / Diesel / CNG / Electric / Hybrid\n\n\u26A0\uFE0F Fuel type galat select karna = galat premium calculation!\n\u26A0\uFE0F CNG gaadi mein Petrol select mat karna \u2014 bahut bada difference aata hai\n\nRC se verify karein aur portal pe match karein.\n\nDone? Aage badhein \u27A1\uFE0F";
+
+    case 2:
+      return `\uD83D\uDD27 Step 3: Variant/Model Check\n\nVehicle ka exact variant select karein:\n\u2022 RC mein 'Model' ya 'Vehicle Description' dekhen\n\u2022 Variant bilkul match hona chahiye (e.g., 'LXI', 'VXI', 'ZXI')\n\n\u26A0\uFE0F Wrong variant = wrong premium + claim reject ho sakta hai!\n\u2705 If confused \u2014 RC pe clearly mention hota hai exact variant\n\nConfirm karein aur 'Done' bolein \u27A1\uFE0F`;
+
+    case 3: {
+      const rcUploaded =
+        activeLead?.docsUploaded?.rcFront && activeLead?.docsUploaded?.rcBack;
+      const rcWarning =
+        activeLead && !rcUploaded
+          ? "\n\u26A0\uFE0F Warning: RC copy upload nahi hui! Pehle App mein RC upload karein."
+          : activeLead && rcUploaded
+            ? "\n\u2705 RC documents uploaded hain \u2014 carefully verify karein."
+            : "";
+
+      return `\uD83D\uDCC4 Step 4: RC Match Verification${rcWarning}\n\nSab details RC ke saath match karein:\n\u2705 Owner name exactly same hona chahiye\n\u2705 Registration date sahi ho\n\u2705 Vehicle class match kare (LMV, MCWG etc.)\n\u2705 Engine number match kare\n\u2705 Chassis number match kare\n\n\u26A0\uFE0F Koi bhi mismatch mila toh RUKO \u2014 galat data = policy rejection ya claim issue!\nMismatch hai toh: 'Warning' bolein aur main guide karungi \uD83D\uDED1\n\nSab sahi? 'Done' bolein \u27A1\uFE0F`;
+    }
+
+    case 4:
+      return `\uD83D\uDCB0 Step 5: Quotation Generation\n\nAb quotes generate karein. Important tips:\n\u2705 Sabhi plan options check karein (Basic, Standard, Comprehensive)\n\u2705 Zero Depreciation add-on zaroor dekhen\n\u2705 Highest IDV wala plan prefer karein for better claim\n\u2705 Engine Protection + RSA add-on recommend karein\n\u2705 NCB correctly apply hua hai? Verify karein\n\n\u2B50 Best Payout Plan: Maximum IDV + Zero Dep + Engine Protection + RSA\n\uD83D\uDCA1 Customer ko Comprehensive plan recommend karein \u2014 claim mein full protection\n\nQuote aa gaya? Screenshot lo aur 'Done' bolein \u27A1\uFE0F`;
+    default:
+      return `\uD83C\uDF89 PB Portal Steps Complete!\n\nAb next steps:\n1. Quotation screenshot save karein\n2. App mein lead pe document upload karein\n3. Customer ko WhatsApp pe share karein\n\nCustomer ko message:\n'Aapka insurance quotation ready hai. Please check karein aur confirm karein.'\n\nCustomer ne agree kiya? 'Customer agree' ya 'Haan' bolein \u27A1\uFE0F\nQuotation upload karna hai? 'Document upload' bolein \u27A1\uFE0F`;
+  }
+}
+
+function buildQuotationFlowReply(_step: number): string {
+  return `\uD83D\uDCCB Quotation Review Checklist:\n\n1. Sabhi plans compare karein:\n   \u2022 Third Party (basic, cheap \u2014 minimum legal requirement)\n   \u2022 Own Damage only (aapki gaadi ka damage)\n   \u2022 Comprehensive (RECOMMENDED \u2705 \u2014 full protection)\n\n2. Highest payout ke liye:\n   \u2705 Maximum IDV select karein (gaadi ki full market value)\n   \u2705 Zero Depreciation add karein (full repair cost)\n   \u2705 Engine Protection add karein (flood/hydraulic damage)\n   \u2705 RSA (Roadside Assistance) consider karein\n   \u2705 NCB Protector agar NCB hai\n\n3. Plan select karne ke baad:\n   \u2192 Screenshot lo (full page capture)\n   \u2192 App mein Lead Detail pe jaao\n   \u2192 Document section mein upload karo\n   \u2192 Customer ko WhatsApp pe bhejo\n\nCustomer ko samjhana:\n'Ye plan best coverage deta hai aur claim mein full amount milega.'\n\nScreenshot ready? 'Upload' ya 'Done' bolein \u27A1\uFE0F`;
+}
+
+function buildDocumentFlowReply(
+  _leads: Lead[],
+  activeLead: Lead | null,
+): string {
+  const leadNote = activeLead
+    ? `\n\uD83D\uDCCC Active Lead: ${activeLead.name || activeLead.mobileNumber} \u2014 inka Lead Detail page open karo.`
+    : "";
+
+  return `\uD83D\uDCE4 Document Upload Guide:${leadNote}\n\nStep 1: Quotation screenshot/PDF ready karo\nStep 2: App mein Lead Detail page pe jaao\nStep 3: 'Upload Document' button pe click karo\nStep 4: File select karo (JPG/PNG/PDF accepted)\nStep 5: Document type select karo (RC, PAN, Aadhaar, Quotation)\nStep 6: Save karo \u2014 document lead se link ho jaayega\n\nWhatsApp pe bhejne ke liye:\n\u2192 Lead Detail page pe 'WhatsApp' button click karo\n\u2192 Message automatic prefill hoga with document info\n\u2192 Send karo \u2014 customer ko instantly milega\n\nSupported formats: JPG, PNG, PDF (max recommended: 5MB)\n\nUpload ho gaya? 'Done' bolein \u27A1\uFE0F`;
+}
+
+function buildCustomerResponseReply(): string {
+  return `\u2705 Customer Ne Agree Kiya! Great! \uD83C\uDF89\n\nPolicy Creation Steps:\n\n1. PB Portal pe wapas jaao\n2. Selected quotation pe 'Proceed' click karo\n3. KYC Details fill karo:\n   \u2705 Owner name as per RC (exactly same!)\n   \u2705 Date of birth\n   \u2705 Aadhaar number (12 digits)\n   \u2705 PAN number\n   \u2705 Mobile number (registered)\n4. Documents upload karo (Aadhaar + PAN + RC)\n5. Details verify karke 'Submit' karo\n6. Payment link generate karo\n\nPayment link generate hone ke baad:\n\u2192 App mein lead pe paste karo (Lead Detail > Payment Link field)\n\u2192 Customer ko WhatsApp pe bhejo\n\u2192 Customer payment karega \u2192 policy activate!\n\nPayment link ready? 'Payment' ya 'Payment link' bolein \u27A1\uFE0F`;
+}
+
+function buildPaymentFlowReply(leads: Lead[], activeLead: Lead | null): string {
+  let statusNote = "";
+
+  if (activeLead) {
+    const name = activeLead.name || activeLead.mobileNumber;
+    if (activeLead.paymentLink) {
+      statusNote = `\n\u2705 ${name} ka payment link already saved hai \u2014 WhatsApp se bhejo!`;
+    } else {
+      statusNote = `\n\u26A0\uFE0F ${name} ka payment link abhi save nahi hua \u2014 pehle generate karo.`;
+    }
+  } else {
+    const pendingPayment = leads.filter(
+      (l) =>
+        l.workflowStatus === "Quotation Ready" ||
+        l.workflowStatus === "PB Action Required",
+    );
+    if (pendingPayment.length > 0) {
+      statusNote = `\n\uD83D\uDCCC ${pendingPayment.length} lead(s) mein payment pending hai.`;
+    }
+  }
+
+  return `\uD83D\uDCB3 Payment Link Guide:${statusNote}\n\nStep 1: PB Portal pe payment link generate karo\nStep 2: Link copy karo (Ctrl+C)\nStep 3: App mein Lead Detail page pe jaao\nStep 4: 'Payment Link' field mein paste karo\nStep 5: Save karo\nStep 6: WhatsApp button se customer ko bhejo\n\nWhatsApp Message (auto-prefilled):\n'Aapka insurance payment link ready hai.\nPlease complete the payment to activate your policy.'\n\n\uD83D\uDCA1 Tip: Payment link bhejne ke baad 2-4 ghante mein follow-up karo!\n\u26A1 Fast payment = faster policy issuance = happy customer\n\nPayment bhej diya? 'Done' bolein \u27A1\uFE0F\nPolicy status check karna? 'Status check' bolein \u27A1\uFE0F`;
+}
+
 // ---- Main Reply Generator (stateful wrapper) ----
 
 function generateSmartPriyaReply(
@@ -752,6 +915,7 @@ function generateSmartPriyaReply(
   leads: Lead[],
   setLastTopic: (topic: string | null) => void,
   conversationHistory: ChatMessage[],
+  workflow: PriyaWorkflow,
 ): string {
   const ctx: ConversationContext = {
     recentTopics: lastTopic ? [lastTopic] : [],
@@ -783,22 +947,70 @@ function generateSmartPriyaReply(
     return "Sorry, ye motor insurance se related nahi hai. 🙏\n\nMain sirf insurance related help kar sakti hoon.\nKya main aapki kisi aur cheez mein madad kar sakti hoon?";
   }
 
+  // Phase-aware dispatch — workflow phases get specialized step-by-step responses
+  const msgLower = userMsg.toLowerCase();
+
+  if (
+    workflow.phase === "app_dashboard" ||
+    /dashboard|check.*lead|lead.*check|mera lead|lead detail|status.*check/i.test(
+      msgLower,
+    )
+  ) {
+    return buildAppDashboardReply(leads, workflow);
+  }
+  if (
+    workflow.phase === "pb_portal" ||
+    /pb portal|portal.*start|pb partner.*start|start.*portal/i.test(msgLower)
+  ) {
+    return buildPbPortalStepReply(workflow.pbPortalStep, workflow.activeLead);
+  }
+  if (
+    workflow.phase === "quotation" ||
+    /quotation.*check|plan.*compare|highest.*payout|quotation guide|best.*plan.*select/i.test(
+      msgLower,
+    )
+  ) {
+    return buildQuotationFlowReply(workflow.pbPortalStep);
+  }
+  if (
+    workflow.phase === "document_flow" ||
+    /screenshot.*upload|pdf.*bhejo|document.*upload|document.*lead|upload.*karo/i.test(
+      msgLower,
+    )
+  ) {
+    return buildDocumentFlowReply(leads, workflow.activeLead);
+  }
+  if (
+    workflow.phase === "customer_response" ||
+    /customer.*agree|customer.*haan|policy.*banao|customer ne haan/i.test(
+      msgLower,
+    )
+  ) {
+    return buildCustomerResponseReply();
+  }
+  if (
+    workflow.phase === "payment_flow" ||
+    /payment.*link|link.*generate|payment.*bhejo|payment.*send/i.test(msgLower)
+  ) {
+    return buildPaymentFlowReply(leads, workflow.activeLead);
+  }
+
   return generateDynamicResponse(userMsg, ctx, leads);
 }
 
 // ---- Quick Chips ----
 
 const QUICK_CHIPS = [
+  "App Dashboard Check",
+  "PB Portal Start",
+  "Quotation Guide",
+  "Document Upload",
+  "Payment Link",
   "NCB kya hai?",
-  "Claim kaise karein?",
-  "Zero Dep?",
-  "Premium kaise kam karein?",
-  "Quotation",
-  "Documents List",
-  "Payment Process",
-  "Policy Renewal",
-  "PB Portal Steps",
+  "Claim Process",
+  "Zero Dep",
   "Help",
+  "Status Check",
 ];
 
 // ---- Voice state label ----
@@ -1413,6 +1625,11 @@ export default function PriyaAssistant({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isBotTyping, setIsBotTyping] = useState(false);
   const [lastTopic, setLastTopic] = useState<string | null>(null);
+  const [priyaWorkflow, setPriyaWorkflow] = useState<PriyaWorkflow>({
+    phase: "idle",
+    pbPortalStep: 0,
+    activeLead: null,
+  });
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -1506,6 +1723,79 @@ export default function PriyaAssistant({
       setIsBotTyping(true);
       setVoiceState("processing");
 
+      // ---- Phase detection & workflow transitions ----
+      const lower = trimmed.toLowerCase();
+
+      // Quick chip triggers for workflow phases
+      const isAppDashboardChip = /^app dashboard check$/i.test(trimmed);
+      const isPbPortalChip = /^pb portal start$/i.test(trimmed);
+      const isQuotationChip = /^quotation guide$/i.test(trimmed);
+      const isDocumentChip = /^document upload$/i.test(trimmed);
+      const isPaymentChip = /^payment link$/i.test(trimmed);
+      const isStatusChip = /^status check$/i.test(trimmed);
+
+      let updatedWorkflow = { ...priyaWorkflow };
+
+      // Phase transitions
+      if (
+        isPbPortalChip ||
+        /pb portal|portal.*start|quotation leni|vehicle number|vehicle entry|portal pe|portal guide/i.test(
+          lower,
+        )
+      ) {
+        updatedWorkflow = {
+          ...updatedWorkflow,
+          phase: "pb_portal",
+          pbPortalStep: 0,
+        };
+      } else if (
+        isAppDashboardChip ||
+        isStatusChip ||
+        /dashboard|lead.*check|check.*lead|status.*check|mera lead|lead detail|documents.*check/i.test(
+          lower,
+        )
+      ) {
+        updatedWorkflow = { ...updatedWorkflow, phase: "app_dashboard" };
+      } else if (
+        isQuotationChip ||
+        /quotation aa|quote aa|plan.*select|highest.*payout|best.*plan|quotation guide/i.test(
+          lower,
+        )
+      ) {
+        updatedWorkflow = { ...updatedWorkflow, phase: "quotation" };
+      } else if (
+        isDocumentChip ||
+        /screenshot.*upload|pdf.*upload|upload.*karo|document.*bhejo|quote.*screenshot/i.test(
+          lower,
+        )
+      ) {
+        updatedWorkflow = { ...updatedWorkflow, phase: "document_flow" };
+      } else if (
+        /customer.*haan|customer.*agree|customer.*ok\b|policy.*banao|customer ne haan/i.test(
+          lower,
+        )
+      ) {
+        updatedWorkflow = { ...updatedWorkflow, phase: "customer_response" };
+      } else if (
+        isPaymentChip ||
+        /payment.*link|link.*generate|payment.*bhejo|payment.*send/i.test(lower)
+      ) {
+        updatedWorkflow = { ...updatedWorkflow, phase: "payment_flow" };
+      } else if (
+        updatedWorkflow.phase === "pb_portal" &&
+        /ho gaya|done|next|aage|^ok$|theek|sahi hai|complete/i.test(lower)
+      ) {
+        // Advance PB portal step (max 5)
+        const nextStep = Math.min(updatedWorkflow.pbPortalStep + 1, 5);
+        updatedWorkflow = { ...updatedWorkflow, pbPortalStep: nextStep };
+      } else if (/stop|band karo|reset|nayi baat/i.test(lower)) {
+        updatedWorkflow = { phase: "idle", pbPortalStep: 0, activeLead: null };
+      }
+
+      // Capture updated workflow synchronously for use in reply
+      const currentWorkflow = updatedWorkflow;
+      setPriyaWorkflow(updatedWorkflow);
+
       // Vary the response delay: 600-1200ms range for natural feel
       const delay = Math.floor(Math.random() * 600) + 600;
 
@@ -1516,6 +1806,7 @@ export default function PriyaAssistant({
           leads,
           setLastTopic,
           messages,
+          currentWorkflow,
         );
 
         if (replyText === "__OPEN_NEW_LEAD__") {
@@ -1557,7 +1848,15 @@ export default function PriyaAssistant({
         speak(replyText);
       }, delay);
     },
-    [isBotTyping, lastTopic, leads, speak, onOpenNewLead, messages],
+    [
+      isBotTyping,
+      lastTopic,
+      leads,
+      speak,
+      onOpenNewLead,
+      messages,
+      priyaWorkflow,
+    ],
   );
 
   processUserMessageRef.current = processUserMessage;
@@ -1583,6 +1882,7 @@ export default function PriyaAssistant({
     setLastTopic(null);
     setIsBotTyping(false);
     setVoiceState("idle");
+    setPriyaWorkflow({ phase: "idle", pbPortalStep: 0, activeLead: null });
   };
 
   const handleClose = () => {
