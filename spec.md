@@ -1,105 +1,73 @@
-# PB Insurance AI — Priya Dual Dashboard Training (Version 40)
+# Insurance Automation System — Priya AI Professional Insurance Expert Training
 
 ## Current State
 
-Priya AI (`PriyaAssistant.tsx`) is a unified chat+voice assistant with:
-- Dynamic response generation via `generateSmartPriyaReply(userMsg, lastTopic, leads, setLastTopic, conversationHistory)`
-- 25+ insurance-topic builders (NCB, IDV, claim, premium, PB Portal text guidance, quotation, payment, documents, etc.)
-- `lastTopic` string tracking for basic continuity
-- Lead data integration: aggregate-only checks (count of leads with missing docs, count with payment pending)
-- No stateful multi-step workflow — all step guidance is embedded in plain text responses
-- No per-lead deep inspection (no reading individual lead names, vehicle numbers, NCB values, specific doc status)
-- PB Portal guidance is static text only — no step-by-step tracking, no RC mismatch detection
+Priya AI assistant (`PriyaAssistant.tsx`) is a 2009-line component that handles:
+- Dynamic response generation via `generateDynamicResponse()` and `generateSmartPriyaReply()`
+- Pattern-matched Hindi+English responses for NCB, IDV, claim, premium, zero dep, add-ons, renewal, KYC, RC, PB portal, quotation, payment, documents, follow-up, status, agent tips
+- Motor insurance keyword detection via `isMotorInsuranceRelated()`
+- Off-topic rejection with Hindi message
+- Voice (STT+TTS), 2.5s silence detection, waveform animation
+- Workflow phases: app_dashboard, pb_portal, quotation, document_flow, customer_response, payment_flow
+- Quick chips: App Dashboard Check, PB Portal Start, Quotation Guide, Document Upload, Payment Link, NCB kya hai?, Claim Process, Zero Dep, Help, Status Check
+
+Gaps vs user's request:
+- No IRDA/regulatory knowledge (KYC rules, mandatory docs compliance, IRDAI grievance)
+- No market comparison knowledge (compare companies, claim settlement ratio, suggest best insurer)
+- No comprehensive PB Partner workflow coverage (proposal step, plan selection nuances)
+- No coverage for policy types beyond comprehensive/TP (SAOD, bundled, long-term)
+- No PA cover explanation
+- No Marathi keyword support in `isMotorInsuranceRelated()`
+- No explicit "trainer" mode with structured learning responses
+- No IRDA rules section in `buildKycReply`
+- Voice style config (rate) could be more calm/slow
+- Quick chips don't include IRDA/compliance topics
+- No company comparison or payout ratio guidance
 
 ## Requested Changes (Diff)
 
 ### Add
-
-1. **Workflow State Engine** inside Priya:
-   - A `priyaWorkflow` state object tracking: `{ phase, subStep, activeLead, pbPortalStep, awaitingInput }`
-   - Phases: `idle | app_dashboard | pb_portal | quotation | document_flow | customer_response | payment_flow`
-   - `pbPortalStep`: 0–5 tracking (vehicle_entry → fuel_check → variant_check → rc_match → quote_ready → complete)
-
-2. **App Dashboard Mode** — when Priya detects "dashboard", "lead", "status", "check" or agent asks about a specific lead:
-   - Read the active lead from context (most recent lead or agent's leads)
-   - Report: name, vehicle, status, missing documents, next recommended step
-   - Alert if critical data missing (no mobile, no RC, no PAN)
-   - Suggest exact next action in short, clear Hindi+English
-
-3. **PB Portal Step-by-Step Guide Mode** — when agent says "PB portal start", "quotation leni hai", "portal pe jaana hai", "vehicle number":
-   - Track step number in state
-   - Step 1: Vehicle Number entry guidance + warn to match RC exactly
-   - Step 2: Fuel type check (Petrol/Diesel/CNG/EV) — cross-check with RC data if available
-   - Step 3: Variant/model check — warn to match RC exactly
-   - Step 4: RC match verification — detect mismatch if lead has RC data
-   - Step 5: Quotation generation — prompt to check all plans
-   - Warn on each step if lead data is available and a mismatch is likely
-   - Advance step on user confirmation ("ho gaya", "done", "next", "aage", "ok")
-
-4. **Quotation Flow Guidance**:
-   - After Step 5 (quotation ready), guide agent to compare all plan tiers
-   - Suggest highest-payout plan selection criteria (comprehensive, zero dep, higher IDV)
-   - Ask agent to take screenshot of quotation
-
-5. **Document Flow**:
-   - After quotation confirmed, ask agent to upload screenshot/PDF of quotation
-   - Remind to save in lead documents section
-   - Guide to send to customer via WhatsApp (with pre-filled message hint)
-
-6. **Customer Response Handling**:
-   - If agent reports "customer agreed" / "customer ne haan kaha" / "policy banao":
-     - Guide through policy creation steps on PB Portal
-     - KYC completion guidance
-
-7. **Payment Flow**:
-   - Guide to generate payment link on PB Portal
-   - Instruct to paste payment link in the lead's Payment Link field in the app
-   - Guide to send via WhatsApp button
-
-8. **Context Awareness** (always knows current step):
-   - Store `priyaWorkflow` phase in component state (not just `lastTopic`)
-   - Each reply appends: "Next step: [konkret action]" at the bottom
-   - If workflow phase is active, every message acknowledges current phase
-
-9. **Error Detection**:
-   - In app dashboard mode: detect and alert for missing mobile, missing RC, missing PAN/Aadhaar
-   - In PB portal mode: detect fuel/variant mismatch if RC data is in the lead
-   - In payment mode: alert if payment link field is empty in lead
-   - Alert formatting: "⚠️ Warning: [issue]"
-
-10. **Quick Chips Update**:
-    - Add: "App Dashboard Check", "PB Portal Start", "Quotation Guide", "Document Upload", "Payment Link"
-    - Keep existing: NCB, Claim, Zero Dep, Premium, Help
+- `buildIrdaRulesReply()` — IRDA KYC requirements, mandatory documents, compliance rules, IRDAI grievance portal guidance
+- `buildMarketComparisonReply()` — compare top insurers (ICICI Lombard, Bajaj Allianz, HDFC ERGO, New India, Tata AIG, Digit), claim settlement ratios, network garages, payout highlights
+- `buildBestPlanSuggestionReply()` — guide agent to suggest best plan based on car age, usage, customer profile
+- `buildPolicyTypesReply()` — comprehensive coverage of SAOD, Bundled (1yr OD+5yr TP), Long-term policy, Floater policies
+- `buildPaCoderReply()` — Personal Accident (PA) cover — mandatory ₹15L PA for owner-driver
+- `buildProposalStepReply()` — PB Partner portal proposal step guidance
+- `buildPlanSelectionReply()` — plan selection nuance: how to choose, what to compare
+- Marathi keywords added to `isMotorInsuranceRelated()` (विमा, प्रीमियम, दावा, एनसीबी, आयडीव्ही, पॉलिसी, आरसी, आधार)
+- New quick chips: "IRDA Rules", "Company Compare", "Best Plan", "PA Cover", "Policy Types"
+- Trainer mode responses: when user asks "train me" or "sikhaao" — structured step-by-step learning format
+- TTS rate changed from 0.85 to 0.80 for calmer voice
+- Extended pattern matching in `generateDynamicResponse()` to route to all new builders
 
 ### Modify
-
-1. **`generateSmartPriyaReply`** — add `priyaWorkflow` param and `setWorkflow` setter so step tracking integrates into reply generation
-2. **`buildPbPortalReply`** — replace static text with dynamic step-specific guidance based on current `pbPortalStep`
-3. **`buildDocumentsReply`** — add per-lead detail: show lead name + which specific docs are missing (not just count)
-4. **`buildPaymentReply`** — add per-lead detail: show lead name + payment status
-5. **Quick chips array** — update with 5 new chips replacing less-used ones
-6. **Main `processUserMessage` handler** — advance `priyaWorkflow` state based on confirmation keywords
+- `buildKycReply()` — add IRDA-mandated KYC rules: eKYC via Aadhaar OTP, CKYC, PAN mandatory for >₹50K, physical KYC for high-value policies, IRDAI circular references
+- `buildHelpReply()` — add new topic categories: IRDA Rules, Company Comparison, Policy Types, PA Cover
+- `isMotorInsuranceRelated()` — add Marathi keywords
+- `QUICK_CHIPS` — add 3-4 new insurance professional chips
+- Voice TTS rate: 0.85 → 0.80
+- `buildClaimRejectionReply()` — add IRDAI Ombudsman process detail
+- `buildPbPortalReply()` — add proposal step guidance
 
 ### Remove
-
-- None — all existing functionality preserved
+- Nothing removed — all existing functionality preserved
 
 ## Implementation Plan
 
-1. Define `PriyaWorkflow` interface with `phase`, `subStep` (pbPortalStep 0–5), `activeLead`, `awaitingInput`
-2. Add `priyaWorkflow` state to `PriyaAssistant` component, initialized to `{ phase: 'idle', subStep: 0 }`
-3. Add workflow phase detection in `processUserMessage`:
-   - PB portal triggers: set phase to `pb_portal`, subStep to 0
-   - Dashboard triggers: set phase to `app_dashboard`
-   - Quotation triggers: set phase to `quotation`
-   - Confirmation keywords: advance subStep
-   - Payment triggers: set phase to `payment_flow`
-4. Add `buildAppDashboardReply(ctx, leads, workflow)` — reads leads, returns status summary + next step
-5. Upgrade `buildPbPortalReply` → `buildPbPortalStepReply(ctx, step, activeLead)` — returns step-specific instruction
-6. Add `buildQuotationFlowReply(ctx, step)` — covers quotation comparison + screenshot guidance
-7. Add `buildDocumentFlowReply(ctx, leads, activeLead)` — upload prompt + WhatsApp send guidance
-8. Add `buildCustomerResponseReply(ctx)` — policy creation guidance
-9. Add `buildPaymentFlowReply(ctx, leads, activeLead)` — payment link generation + WhatsApp guide
-10. Add `detectErrors(leads, workflow)` — returns array of error strings to prepend to any reply when in active workflow
-11. Update quick chips array with 5 new workflow chips
-12. Wire all new builders into `generateSmartPriyaReply` dispatch logic
+1. Add Marathi keywords to `isMotorInsuranceRelated()` function
+2. Add new builder functions after existing builders:
+   - `buildIrdaRulesReply()` with KYC requirements and compliance
+   - `buildMarketComparisonReply()` with insurer comparison and CSR data
+   - `buildBestPlanSuggestionReply()` with profiling-based suggestions
+   - `buildPolicyTypesReply()` with all policy type explanations
+   - `buildPaCoderReply()` for PA cover mandatory rules
+   - `buildProposalStepReply()` for PB portal proposal step
+   - `buildPlanSelectionReply()` for plan selection guidance
+3. Add routing patterns in `generateDynamicResponse()` for all new topics
+4. Update `buildKycReply()` with IRDA compliance detail
+5. Update `buildHelpReply()` with new topics
+6. Update `buildClaimRejectionReply()` with ombudsman detail
+7. Update `buildPbPortalReply()` with proposal step
+8. Update `QUICK_CHIPS` array with new professional chips
+9. Change TTS rate from 0.85 to 0.80
+10. Validate and build

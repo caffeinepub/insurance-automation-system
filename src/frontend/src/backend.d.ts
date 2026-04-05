@@ -46,6 +46,7 @@ export enum Status {
     inProgress = "inProgress"
 }
 export interface backendInterface {
+    _initializeAccessControlWithSecret(secret: string): Promise<void>;
     assignLead(leadId: LeadId, agentId: AgentId): Promise<void>;
     createLead(mobileNumber: string): Promise<LeadId>;
     createUser(principal: UserId, email: string, role: Role, name: string): Promise<void>;

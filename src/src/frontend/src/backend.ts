@@ -128,6 +128,7 @@ export enum Status {
     inProgress = "inProgress"
 }
 export interface backendInterface {
+    _initializeAccessControlWithSecret(secret: string): Promise<void>;
     assignLead(leadId: LeadId, agentId: AgentId): Promise<void>;
     createLead(mobileNumber: string): Promise<LeadId>;
     createUser(principal: UserId, email: string, role: Role, name: string): Promise<void>;
@@ -266,6 +267,10 @@ export class Backend implements backendInterface {
             const result = await this.actor.updateLeadStatus(arg0, to_candid_Status_n14(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
+    }
+    async _initializeAccessControlWithSecret(_secret: string): Promise<void> {
+        // No-op: access control not used in this project
+        return Promise.resolve();
     }
 }
 function from_candid_Lead_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Lead): Lead {

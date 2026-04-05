@@ -203,6 +203,22 @@ const MOTOR_INSURANCE_KEYWORDS = [
   "vaahan",
   "gadir",
   "naledi",
+  // Additional Marathi + Hindi keywords
+  "विमा",
+  "प्रीमियम",
+  "दावा",
+  "एनसीबी",
+  "आयडीव्ही",
+  "पॉलिसी",
+  "आरसी",
+  "आधार",
+  "मालक",
+  "नोंदणी",
+  "premia",
+  "dava",
+  "aydivhi",
+  "yojana",
+  "bharpai",
 ];
 
 // Check if the question is related to motor insurance
@@ -407,6 +423,69 @@ function generateDynamicResponse(
     return buildCommercialReply(context);
   }
 
+  // --- IRDA/Regulatory ---
+  if (
+    /irda|irdai|regulatory|compliance|grievance|ombudsman|mandatory.*doc|kyc.*rule|rule.*kyc/i.test(
+      lower,
+    )
+  ) {
+    return buildIrdaRulesReply(context);
+  }
+
+  // --- Market comparison ---
+  if (
+    /company compare|compare.*company|best company|which company|konsi company|kaun si company|claim ratio|settlement ratio|csr|icici|bajaj|hdfc|digit|tata aig|new india|network garage/i.test(
+      lower,
+    )
+  ) {
+    return buildMarketComparisonReply(context);
+  }
+
+  // --- Best plan suggestion ---
+  if (
+    /best plan|konsa plan|which plan|plan suggest|suggest.*plan|best policy|recommend.*policy|policy recommend|kya lena chahiye/i.test(
+      lower,
+    )
+  ) {
+    return buildBestPlanSuggestionReply(context);
+  }
+
+  // --- Policy types ---
+  if (
+    /policy type|types of policy|saod|bundled policy|long.?term policy|pay as you drive|payd|1 year od|5 year tp/i.test(
+      lower,
+    )
+  ) {
+    return buildPolicyTypesReply(context);
+  }
+
+  // --- PA Cover ---
+  if (
+    /personal accident|\bpa cover\b|\bpa\b.*cover|owner.?driver.*cover|15.*lakh.*cover|mandatory.*accident/i.test(
+      lower,
+    )
+  ) {
+    return buildPaCoverReply(context);
+  }
+
+  // --- Proposal step ---
+  if (
+    /proposal|proposal form|proposal step|fill proposal|proposal kaise/i.test(
+      lower,
+    )
+  ) {
+    return buildProposalStepReply(context);
+  }
+
+  // --- Plan selection ---
+  if (
+    /plan selection|select.*plan|plan.*select|plan choose|choose.*plan|add.?on.*select|addon.*select/i.test(
+      lower,
+    )
+  ) {
+    return buildPlanSelectionReply(context);
+  }
+
   // --- PB Portal ---
   if (/pb portal|pb partner|pbpartner|portal.*step|pb website/i.test(lower)) {
     return buildPbPortalReply(context);
@@ -534,7 +613,7 @@ function buildClaimDocReply(_ctx: ConversationContext): string {
 }
 
 function buildClaimRejectionReply(_ctx: ConversationContext): string {
-  return "Claim reject kyun hota hai? Common reasons: ❌ Policy expired thi claim ke time. ❌ Driving under influence (drunk driving). ❌ Invalid Driving License. ❌ Policy exclusions — jaise commercial use pe personal policy. ❌ Delayed intimation — 24-48 ghante mein inform nahi kiya. ❌ Incomplete documentation. ❌ Fraud ya misrepresentation. Solution: Rejection letter milne pe reason clearly padhein. Agar valid reason nahi hai toh IRDAI Grievance Portal pe complaint karein ya Insurance Ombudsman se help lein. Main aur detail de sakti hoon! 💪";
+  return "Claim reject kyun hota hai? Common reasons aur solutions: ❌\n\nCommon Rejection Reasons:\n❌ Policy expired thi claim ke time\n❌ Drunk driving (DUI) — completely excluded\n❌ Invalid or expired Driving License\n❌ Policy exclusions — commercial use pe personal policy\n❌ Delayed intimation — 24-48 ghante mein inform nahi kiya\n❌ Incomplete documentation\n❌ Fraud ya misrepresentation in proposal form\n❌ Modification not declared (CNG kit, racing parts)\n\nSolution if Claim Rejected:\n1️⃣ Rejection letter carefully padhein — reason samjhein\n2️⃣ Additional documents de sakte hain (if document issue tha)\n3️⃣ Insurance Company Grievance Cell ko likhein (within 30 days)\n4️⃣ If no resolution in 15 days → IRDAI IGMS Portal pe complaint:\n   🌐 igms.irda.gov.in OR IRDAI Helpline: 155255\n5️⃣ Insurance Ombudsman: Free dispute resolution up to ₹30 lakh claim\n   📋 Ombudsman offices in 17 cities across India\n   ⏰ File within 1 year of insurer's final reply\n\n⚖️ Remember: IRDAI protects consumer rights — genuine claims MUST be settled!\n\nKoi specific rejection reason ke baare mein detail chahiye? 💪";
 }
 
 function buildClaimGeneralReply(ctx: ConversationContext): string {
@@ -578,7 +657,7 @@ function buildRenewalReply(ctx: ConversationContext): string {
 }
 
 function buildKycReply(_ctx: ConversationContext): string {
-  return "KYC for motor insurance: 📄\n\nIdentity Proof: Aadhaar Card (most preferred), PAN Card, Passport, Voter ID\nAddress Proof: Aadhaar (if address updated), Utility bill, Bank statement\nVehicle Docs: RC copy, Previous policy (if renewal)\n\nFun fact: Aadhaar-based eKYC toh 2 minutes mein complete hoti hai — instant verification! PAN mandatory hai ₹50,000+ transactions pe.\n\nAgent tip: Customer ko advance mein docs ready karwaao — KYC mein delay se policy issuance late hoti hai. Koi sawaal? 😊";
+  return "KYC for Motor Insurance — IRDAI Mandated Rules: 📄\n\n🔹 Types of KYC:\n• eKYC (Aadhaar OTP) — instant, 100% digital, most preferred\n• CKYC — Central KYC Registry; once done reusable for all policies\n• Physical KYC — for high-value or commercial policies\n• Video KYC — insurer agent video call for verification\n\n🔹 Identity Proof (Any One):\nAadhaar Card (most preferred), PAN Card, Passport, Voter ID, Driving License\n\n🔹 Address Proof:\nAadhaar (if address updated), Utility bill (recent 3 months), Bank statement\n\n🔹 Vehicle Documents:\nRC copy (both sides), Previous policy (for renewal)\n\n🔹 IRDAI KYC Rules:\n✅ PAN mandatory for premium ≥ ₹50,000/year\n✅ Aadhaar-based eKYC is instant — 2 minutes only!\n✅ CKYC ID number stored — no need to re-submit KYC next time\n✅ Insurer cannot refuse eKYC as valid KYC\n\n⚠️ Agent Tip: Always collect documents BEFORE proposal submission. KYC delay = policy issuance delay = unhappy customer!\n\n📞 IRDAI Helpline: 155255 | Website: www.irdai.gov.in\n\nKya aur detail chahiye? 😊";
 }
 
 function buildRcReply(_ctx: ConversationContext): string {
@@ -721,7 +800,7 @@ function buildStatusReply(_ctx: ConversationContext): string {
 }
 
 function buildHelpReply(): string {
-  return "Main Priya hoon — aapki motor insurance AI assistant! 🌟\n\nMain in topics pe help kar sakti hoon:\n\n🔵 Insurance Concepts: NCB, IDV, Premium, Claim, Zero Dep, Add-ons\n🟢 Policy Types: Comprehensive, Third Party, OD, Two-Wheeler, Commercial\n🟡 Workflow: PB Portal steps, Quotation, Payment process\n🟠 Documents: Checklist, KYC, RC verification\n🔴 Agent Tools: Follow-up tips, Lead management, Conversion strategies\n⚪ Actions: New Lead create karna\n\nBas poochho — koi bhi motor insurance sawaal! Hindi, English, ya Marathi mein. Main hoon na! 💪\n\nKya jaanna hai? 😊";
+  return "Main Priya hoon — aapki Professional Motor Insurance AI Advisor! 🌟\n\nMain in topics pe help kar sakti hoon:\n\n🔵 Insurance Concepts: NCB, IDV, Premium, Claim, Zero Dep, Add-ons, PA Cover\n🟢 Policy Types: Comprehensive, Third Party, SAOD, Bundled, Long-term\n🟡 Workflow: App Dashboard, PB Portal steps, Proposal, Quotation, Payment\n🟠 Documents & KYC: Checklist, IRDAI KYC rules, RC verification\n🔴 IRDA Rules: KYC compliance, Mandatory docs, Grievance, Ombudsman\n🟣 Market Knowledge: Company comparison, CSR, Best plan suggestion\n⚪ Agent Tools: Follow-up tips, Lead management, Conversion strategies\n🎓 Training Mode: Step-by-step learning on any insurance topic\n\nBas poochho — koi bhi motor insurance sawaal! Hindi, English, ya Marathi mein. Main hoon na! 💪\n\nQuick topics:\n• 'IRDA rules' → Compliance guide\n• 'Company compare' → CSR + network comparison\n• 'Best plan' → Profiling-based suggestion\n• 'PA Cover' → Mandatory PA rules\n• 'Policy types' → All policy types explained\n• 'Proposal step' → PB Portal proposal guide\n\nKya jaanna hai? 😊";
 }
 
 function buildGeneralInsuranceReply(
@@ -757,6 +836,38 @@ Main is topic pe help kar sakti hoon — thoda aur specific batao? Jaise:
 • Agent workflow se related?
 
 Main motor insurance ke baare mein poori detail de sakti hoon — sirf topic clearly batao! 😊`;
+}
+
+function buildIrdaRulesReply(_ctx: ConversationContext): string {
+  return '🏛️ IRDAI Rules & Compliance — Professional Guide:\n\n📋 KYC Requirements (IRDAI Circular):\n✅ Aadhaar-based eKYC — instant, OTP-based, fully digital\n✅ CKYC (Central KYC) — once done, reusable for all financial products\n✅ PAN Card — mandatory for premium above ₹50,000/year\n✅ Physical KYC — needed for high-value or commercial policies\n\n📑 Mandatory Documents for Motor Policy:\n1️⃣ RC (Registration Certificate) — both sides\n2️⃣ Valid Driving License of owner/driver\n3️⃣ Aadhaar Card (identity + address proof)\n4️⃣ PAN Card (for KYC + transactions)\n5️⃣ Old Policy copy (for renewal + NCB proof)\n6️⃣ Passport-size photo (some insurers require)\n\n⚖️ Key IRDAI Rules:\n• Insurance contract is based on "Utmost Good Faith" — all info must be accurate\n• Insurer must settle claim within 30 days of survey\n• Free-look period: 15 days to cancel new policy\n• IRDAI Grievance Portal: igms.irda.gov.in\n• Insurance Ombudsman: Free dispute resolution up to ₹30 lakh\n\n🛡️ Agent Compliance:\n• Never mis-sell — explain what is and isn\'t covered\n• Disclosure of commission is mandatory if asked\n• Customer must sign proposal form (digital/physical)\n\nKisi specific IRDAI rule ke baare mein detail chahiye? 😊';
+}
+
+function buildMarketComparisonReply(_ctx: ConversationContext): string {
+  return "🏆 Top Motor Insurers Comparison — 2024:\n\n| Company | CSR* | Network Garages | Strength |\n|---|---|---|---|\n| ICICI Lombard | 97.4% | 15,000+ | Fast claim, digital |\n| Bajaj Allianz | 98.5% | 6,500+ | High CSR, trusted |\n| HDFC ERGO | 91.2% | 8,800+ | Good add-ons |\n| Digit Insurance | 96.4% | 6,900+ | Affordable, digital-first |\n| Tata AIG | 95.0% | 7,500+ | Reliable, wide coverage |\n| New India Assurance | 91.6% | 3,000+ | PSU trust |\n| Oriental Insurance | 90.1% | 3,200+ | Budget option |\n\n*CSR = Claim Settlement Ratio (higher = better)\n\n💡 Best Plan Suggestion by Category:\n🚗 New Premium Car: ICICI Lombard or Bajaj Allianz (Zero Dep + RTI)\n🏍️ Two-Wheeler: Digit or Bajaj Allianz (affordable + fast)\n🚛 Commercial Vehicle: New India or HDFC ERGO (specialist coverage)\n👴 Old Car (8+ yrs): Third Party only — Digit or New India (cheapest)\n\n📊 PB Partners typically shows top 6-8 companies — always compare and show customer CSR to build trust!\n\nKisi specific company ke baare mein detail chahiye? 💪";
+}
+
+function buildBestPlanSuggestionReply(ctx: ConversationContext): string {
+  const tips = [
+    "🎯 Best Plan Selection Guide:\n\nStep 1: Customer Profile Check karo\n• Car kitni purani hai? (0-3yr = Comprehensive must)\n• Loan hai? (Yes = Comprehensive mandatory by bank)\n• Parking — open ya garage? (Open = theft risk higher)\n• Usage — daily commute ya occasional?\n• Previous claims? (Yes = NCB already gaya)\n\nStep 2: Coverage Decide karo\n✅ 0-5 year car → Comprehensive + Zero Dep + Engine Protection\n✅ 5-8 year car → Comprehensive (skip Zero Dep)\n✅ 8+ year car → Third Party only (if low value)\n✅ Luxury/premium car → Always Comprehensive + all add-ons\n\nStep 3: Add-ons Select karo\n🌟 Must-have: Zero Dep, Engine Protection, RSA\n💡 Optional: RTI (new car), NCB Protector, Consumables\n\nStep 4: Company select karo\n• Check CSR (>95% preferred)\n• Network garage count (more = better cashless options)\n• Premium difference < ₹500 ho toh higher CSR company prefer karo\n\nQuote ready hai? Customer ko explain karein kya choose kiya aur kyun! 😊",
+    '💰 Smart Plan Recommendation Strategy:\n\nCustomer ko sirf price pe focus mat karne do! Value dikhao:\n\n"Sir, ye plan ₹3,000 zyada hai lekin claim pe ₹35,000 extra milega (Zero Dep ke wajah se). Ek minor accident mein hi yeh extra amount recover ho jaata hai!"\n\nHighest Payout Formula:\n= Maximum IDV + Zero Depreciation + Engine Protection + RSA + NCB Protector\n\nYe formula use karo PB Portal pe plan select karte waqt. Customer automatically agree karta hai jab numbers clearly dikhate ho!\n\nAur tip: Company CSR share karo — "Is company ka 98% claims settle hota hai — ye matlab 100 mein se 98 log khush hain!" Customer confidence badhta hai! 🏆',
+  ];
+  return tips[ctx.turnCount % tips.length];
+}
+
+function buildPolicyTypesReply(_ctx: ConversationContext): string {
+  return "📋 Motor Insurance Policy Types — Complete Guide:\n\n1️⃣ Third Party (TP) Only\n• Mandatory by law (Motor Vehicles Act)\n• Covers: Damage to others' vehicle/property, third party injury/death\n• Does NOT cover: Your own vehicle damage\n• Premium: Government-set (cheapest option)\n• Best for: Very old low-value cars\n\n2️⃣ Own Damage (OD) Only — SAOD\n• Covers only your vehicle damage\n• TP must be bought separately\n• Available when TP is already active\n\n3️⃣ Comprehensive (Package Policy) ✅ RECOMMENDED\n• TP + OD combined — full protection\n• Covers: Your vehicle + third party + theft + natural calamity\n• Add-ons possible\n• Best for: Any car up to 8-10 years\n\n4️⃣ Bundled Policy (For New Cars)\n• 1 Year OD + 5 Year TP\n• Mandated by Supreme Court for new vehicles\n• Cost-effective for brand new cars\n\n5️⃣ Long-Term Policy\n• 3-year or 5-year policy\n• Pros: No annual renewal hassle, fixed premium\n• Cons: Can't switch insurer easily\n• Available for two-wheelers mainly\n\n6️⃣ Pay-As-You-Drive (PAYD)\n• New IRDAI-approved concept\n• Premium based on km driven\n• Good for low-usage vehicles\n\nKonsa policy type customer ke liye best hai? Bol dein aur main specific guidance dunga! 😊";
+}
+
+function buildPaCoverReply(_ctx: ConversationContext): string {
+  return "🛡️ Personal Accident (PA) Cover — MANDATORY Rule:\n\nIRDAI ne PA cover mandatory kar diya hai!\n\n✅ ₹15 Lakh PA Cover for Owner-Driver:\n• Mandatory for every motor policy\n• Covers owner-driver in case of accident\n• Death: 100% sum insured (₹15L)\n• Permanent Total Disability: 100%\n• Permanent Partial Disability: % as per IRDAI schedule\n• Temporary Disability: Weekly benefit (some policies)\n\n📋 When is PA NOT required:\n• If customer already has standalone PA policy (≥₹15L)\n• They must provide proof of existing PA cover\n\n💰 Cost: Usually ₹750-900/year add-on to motor policy\n\n⚠️ Common Agent Mistake: Some agents skip PA cover to show lower premium — THIS IS WRONG!\n\n🔑 Agent Action:\n1. Always include PA cover in quote\n2. Explain importance to customer\n3. If they have existing PA, take proof\n4. Note in policy proposal form\n\nCoverage details samjhe? Kuch aur poochhna hai? 😊";
+}
+
+function buildProposalStepReply(_ctx: ConversationContext): string {
+  return "📝 PB Portal — Proposal Step Guide:\n\nAb quotation select hone ke baad Proposal Form bharni hai:\n\nStep 1: Policyholder Details\n✅ Full Name exactly as RC mein\n✅ Date of Birth (DD/MM/YYYY)\n✅ Mobile Number (registered)\n✅ Email ID\n✅ Address as per Aadhaar\n\nStep 2: Vehicle Details Verify\n✅ Registration Number\n✅ Engine Number\n✅ Chassis Number\n✅ Manufacturing Year\n✅ Purchase Date (for new cars)\n\nStep 3: Previous Policy Details (Renewal)\n✅ Previous Policy Number\n✅ Previous Insurer\n✅ NCB % claimed\n✅ Claim history (Yes/No)\n\nStep 4: KYC Documents Upload\n✅ Aadhaar Front + Back\n✅ PAN Card\n✅ RC copy (both sides)\n\nStep 5: Nominee Details\n✅ Nominee Name\n✅ Nominee Relationship\n✅ Nominee DOB\n\nStep 6: Review & Submit\n✅ Sabhi details ek baar verify karein\n✅ Customer se confirm karein\n✅ Submit button click karein\n\n⚠️ Common Mistakes to Avoid:\n• Name spelling mistake\n• Wrong engine/chassis number\n• NCB % galat declare karna\n• Missing KYC documents\n\nProposal submit ho gaya? Payment link generate karo! 💪";
+}
+
+function buildPlanSelectionReply(_ctx: ConversationContext): string {
+  return "🎯 Plan Selection — Expert Strategy:\n\nQuotation page pe yeh order follow karo:\n\n1. IDV Check karo\n   • Market value ke equal ya slight premium consider karo\n   • Bahut kam IDV = underinsured (claim mein loss)\n   • Bahut zyada IDV = extra premium waste\n\n2. Plan Type Select karo\n   • Comprehensive hamesha (0-8 yr car)\n   • TP only sirf very old low-value cars ke liye\n\n3. Add-ons Select karo (in order of priority)\n   🥇 Zero Depreciation (must for <5 yr car)\n   🥈 Engine Protection (must for flood areas)\n   🥉 RSA (good for long-distance drivers)\n   4️⃣ NCB Protector (agar NCB ≥20% hai)\n   5️⃣ RTI (must for <1 yr car)\n   6️⃣ Consumables (optional, budget permitting)\n\n4. Company Compare karo\n   • Ek hi coverage ka quote 2-3 companies ka dekho\n   • ₹500-1000 premium difference pe CSR prefer karo\n   • Network garage count bhi check karo\n\n5. Customer ko Explain karo\n   • \"Ye ₹2,500 extra invest karo Zero Dep mein — ek minor claim pe ₹20,000+ bachenge\"\n   • Always value-based selling, not price-based!\n\nPlan select ho gaya? Proposal step ke liye 'Proposal' bolein ➡️";
 }
 
 // ---- Workflow-Aware Reply Builders ----
@@ -1009,6 +1120,11 @@ const QUICK_CHIPS = [
   "NCB kya hai?",
   "Claim Process",
   "Zero Dep",
+  "IRDA Rules",
+  "Company Compare",
+  "Best Plan",
+  "PA Cover",
+  "Policy Types",
   "Help",
   "Status Check",
 ];
@@ -1117,7 +1233,7 @@ function usePriyaVoice(onSpeakStart?: () => void, onSpeakEnd?: () => void) {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.lang = "hi-IN";
-      u.rate = 0.85;
+      u.rate = 0.8;
       u.pitch = 1.1;
       if (voiceRef.current) u.voice = voiceRef.current;
       u.onstart = () => onSpeakStart?.();
