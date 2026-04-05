@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Inbox } from "lucide-react";
+import { ExternalLink, Inbox, Link2 } from "lucide-react";
 import { useApp } from "../context/AppContext";
 import { type Lead, WORKFLOW_STATUSES, type WorkflowStatus } from "../types";
 import StatusBadge from "./StatusBadge";
@@ -67,6 +67,7 @@ export default function LeadTable({
               "Quote Status",
               "KYC Status",
               "Payment",
+              "Payment Link",
               "Policy",
               "Step",
               "Actions",
@@ -94,7 +95,7 @@ export default function LeadTable({
               </td>
               <td className="px-4 py-3 text-gray-700 whitespace-nowrap">
                 {lead.name || (
-                  <span className="text-gray-300 italic">\u2014</span>
+                  <span className="text-gray-300 italic">&#8212;</span>
                 )}
               </td>
               {/* biome-ignore lint/a11y/useKeyWithClickEvents: stop propagation only */}
@@ -142,6 +143,25 @@ export default function LeadTable({
               </td>
               <td className="px-4 py-3">
                 <StatusBadge status={lead.paymentStatus} />
+              </td>
+              {/* Payment Link column */}
+              {/* biome-ignore lint/a11y/useKeyWithClickEvents: stop propagation only */}
+              <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                {lead.paymentLink ? (
+                  <a
+                    href={lead.paymentLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    title={lead.paymentLink}
+                    data-ocid={`leads.payment_link.${idx + 1}`}
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                ) : (
+                  <span className="text-gray-300 text-xs">—</span>
+                )}
               </td>
               <td className="px-4 py-3">
                 <StatusBadge status={lead.policyStatus} />

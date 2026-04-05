@@ -4,11 +4,12 @@ import FloatingAIChat from "./components/FloatingAIChat";
 import FloatingWhatsApp from "./components/FloatingWhatsApp";
 import UpdateNotificationBanner from "./components/UpdateNotificationBanner";
 import { AppProvider, useApp } from "./context/AppContext";
+import AdminControlPanel from "./pages/AdminControlPanel";
 import CustomerTrackingPage from "./pages/CustomerTrackingPage";
 import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 
-type AppView = "main" | "customer-tracking";
+type AppView = "main" | "customer-tracking" | "admin-panel";
 
 function AppInner() {
   const { currentUser } = useApp();
@@ -24,10 +25,20 @@ function AppInner() {
     );
   }
 
+  if (view === "admin-panel" && currentUser?.role === "admin") {
+    return (
+      <>
+        <AdminControlPanel onBack={() => setView("main")} />
+        <Toaster position="bottom-right" richColors />
+        <UpdateNotificationBanner />
+      </>
+    );
+  }
+
   return (
     <>
       {currentUser ? (
-        <DashboardPage />
+        <DashboardPage onAdminPanel={() => setView("admin-panel")} />
       ) : (
         <LoginPage onTrackPolicy={() => setView("customer-tracking")} />
       )}

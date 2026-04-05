@@ -8,31 +8,46 @@ import {
   ExternalLink,
   FileText,
   LogOut,
+  MessageCircle,
   Plus,
+  Search,
   Shield,
-  Star,
   TrendingUp,
   Users,
+  X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import LeadCard from "../components/LeadCard";
 import LeadDetailPage from "../components/LeadDetailPage";
 import NewLeadFullForm from "../components/NewLeadFullForm";
 import Sidebar from "../components/Sidebar";
+import WhatsAppLeadModal from "../components/WhatsAppLeadModal";
 import { AGENTS, useApp } from "../context/AppContext";
-import type { Lead } from "../types";
+import type { Lead, WorkflowStatus } from "../types";
+import { WORKFLOW_STATUSES } from "../types";
 
 type Page = "dashboard" | "leads" | "reports" | "settings";
 type DashboardView = "list" | "detail";
 type PerfFilter = "today" | "month" | "all";
 
-export default function DashboardPage() {
+const STATUS_ALL = "All";
+
+interface DashboardPageProps {
+  onAdminPanel?: () => void;
+}
+
+export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
   const { currentUser, leads, logout } = useApp();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [view, setView] = useState<DashboardView>("list");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [showFullForm, setShowFullForm] = useState(false);
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
   const [perfFilter, setPerfFilter] = useState<PerfFilter>("month");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    WorkflowStatus | typeof STATUS_ALL
+  >(STATUS_ALL);
 
   const isAdmin = currentUser?.role === "admin";
 
@@ -40,6 +55,24 @@ export default function DashboardPage() {
     if (isAdmin) return leads;
     return leads.filter((l) => l.assignedAgent === currentUser?.email);
   }, [leads, currentUser, isAdmin]);
+
+  // Filtered leads (search + status)
+  const filteredLeads = useMemo(() => {
+    let result = visibleLeads;
+    if (statusFilter !== STATUS_ALL) {
+      result = result.filter((l) => l.workflowStatus === statusFilter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (l) =>
+          l.name.toLowerCase().includes(q) ||
+          l.mobileNumber.includes(q) ||
+          (l.email ?? "").toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [visibleLeads, statusFilter, searchQuery]);
 
   const stats = useMemo(() => {
     const totalLeads = visibleLeads.length;
@@ -291,12 +324,25 @@ export default function DashboardPage() {
     },
   ];
 
+  // Status filter counts
+  const statusCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: visibleLeads.length };
+    for (const s of WORKFLOW_STATUSES) {
+      counts[s] = visibleLeads.filter((l) => l.workflowStatus === s).length;
+    }
+    return counts;
+  }, [visibleLeads]);
+
   // Detail view
   if (view === "detail" && selectedLeadId) {
     return (
       <div className="flex h-screen bg-background overflow-hidden">
         <div className="hidden md:block">
-          <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+          <Sidebar
+            currentPage={currentPage}
+            onNavigate={setCurrentPage}
+            onAdminPanel={isAdmin ? onAdminPanel : undefined}
+          />
         </div>
         <main className="flex-1 md:ml-[240px] overflow-y-auto">
           <LeadDetailPage leadId={selectedLeadId} onBack={handleBack} />
@@ -309,7 +355,11 @@ export default function DashboardPage() {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <div className="hidden md:block">
-        <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+        <Sidebar
+          currentPage={currentPage}
+          onNavigate={setCurrentPage}
+          onAdminPanel={isAdmin ? onAdminPanel : undefined}
+        />
       </div>
 
       <div className="flex-1 md:ml-[240px] flex flex-col overflow-hidden">
@@ -567,20 +617,20 @@ export default function DashboardPage() {
                                 `\u20b9${agent.totalBusiness.toLocaleString("en-IN")}`
                               ) : (
                                 <span className="text-gray-300 font-normal">
-                                  —
+                                  &#8212;
                                 </span>
                               )}
                             </td>
                             <td className="px-4 py-3 text-right">
                               {agent.commissionEarned > 0 ? (
                                 <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold font-mono text-xs border border-emerald-100">
-                                  ₹
+                                  &#8377;
                                   {agent.commissionEarned.toLocaleString(
                                     "en-IN",
                                   )}
                                 </span>
                               ) : (
-                                <span className="text-gray-300">—</span>
+                                <span className="text-gray-300">&#8212;</span>
                               )}
                             </td>
                           </tr>
@@ -607,14 +657,14 @@ export default function DashboardPage() {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-right font-mono font-bold text-gray-900">
-                            ₹
+                            &#8377;
                             {agentBreakdown
                               .reduce((s, a) => s + a.business, 0)
                               .toLocaleString("en-IN")}
                           </td>
                           <td className="px-4 py-3 text-right">
                             <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold font-mono text-xs border border-emerald-200">
-                              ₹
+                              &#8377;
                               {agentBreakdown
                                 .reduce((s, a) => s + a.commission, 0)
                                 .toLocaleString("en-IN")}
@@ -634,7 +684,11 @@ export default function DashboardPage() {
                     <Users className="w-4 h-4 text-gray-400" />
                     <h2 className="text-sm font-bold text-gray-900">Leads</h2>
                     <span className="text-xs text-gray-400 font-medium">
-                      ({visibleLeads.length})
+                      ({filteredLeads.length}
+                      {filteredLeads.length !== visibleLeads.length
+                        ? `/${visibleLeads.length}`
+                        : ""}
+                      )
                     </span>
                     {isAdmin && (
                       <span className="text-[10px] bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded-full border border-blue-100">
@@ -642,18 +696,117 @@ export default function DashboardPage() {
                       </span>
                     )}
                   </div>
-                  <Button
-                    onClick={handleAddLead}
-                    className="bg-gray-900 hover:bg-gray-800 text-white text-xs h-8 px-3 flex items-center gap-1.5 rounded-lg"
-                    data-ocid="leads.add_button"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    New Lead
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => setShowWhatsAppModal(true)}
+                      variant="outline"
+                      className="text-xs h-8 px-3 flex items-center gap-1.5 rounded-lg border-green-300 text-green-700 hover:bg-green-50"
+                      data-ocid="leads.whatsapp_create.button"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">From WhatsApp</span>
+                    </Button>
+                    <Button
+                      onClick={handleAddLead}
+                      className="bg-gray-900 hover:bg-gray-800 text-white text-xs h-8 px-3 flex items-center gap-1.5 rounded-lg"
+                      data-ocid="leads.add_button"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      New Lead
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Search bar */}
+                <div className="px-4 pt-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search by name, mobile or email\u2026"
+                      className="w-full pl-9 pr-9 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 bg-gray-50"
+                      data-ocid="leads.search_input"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 hover:text-gray-600"
+                        aria-label="Clear search"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Status filter chips */}
+                <div className="px-4 py-2.5 overflow-x-auto">
+                  <div className="flex items-center gap-1.5 min-w-max">
+                    {/* "All" chip */}
+                    <button
+                      type="button"
+                      onClick={() => setStatusFilter(STATUS_ALL)}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${
+                        statusFilter === STATUS_ALL
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-400"
+                      }`}
+                      data-ocid="leads.status_filter.all.toggle"
+                    >
+                      All
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-0.5 ${
+                          statusFilter === STATUS_ALL
+                            ? "bg-white/20 text-white"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        {statusCounts.All}
+                      </span>
+                    </button>
+
+                    {WORKFLOW_STATUSES.map((status) => {
+                      const isActive = statusFilter === status;
+                      const count = statusCounts[status] ?? 0;
+                      return (
+                        <button
+                          key={status}
+                          type="button"
+                          onClick={() =>
+                            setStatusFilter(isActive ? STATUS_ALL : status)
+                          }
+                          className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap border transition-colors ${
+                            isActive
+                              ? "bg-blue-600 text-white border-blue-600"
+                              : "bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600"
+                          }`}
+                          data-ocid={`leads.status_filter.${status
+                            .toLowerCase()
+                            .replace(/\s+/g, "_")}.toggle`}
+                        >
+                          {status}
+                          <span
+                            className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ml-0.5 ${
+                              isActive
+                                ? "bg-white/20 text-white"
+                                : count > 0
+                                  ? "bg-blue-50 text-blue-600"
+                                  : "bg-gray-100 text-gray-400"
+                            }`}
+                          >
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 <div className="p-3 space-y-2">
-                  {visibleLeads.length === 0 ? (
+                  {filteredLeads.length === 0 ? (
                     <div
                       className="flex flex-col items-center justify-center py-12 text-center"
                       data-ocid="leads.empty_state"
@@ -662,14 +815,18 @@ export default function DashboardPage() {
                         <Users className="w-6 h-6 text-gray-400" />
                       </div>
                       <p className="text-sm font-semibold text-gray-600">
-                        No leads yet
+                        {searchQuery || statusFilter !== STATUS_ALL
+                          ? "No leads match your filter"
+                          : "No leads yet"}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        Tap "New Lead" to get started
+                        {searchQuery || statusFilter !== STATUS_ALL
+                          ? "Try clearing the search or status filter"
+                          : 'Tap "New Lead" to get started'}
                       </p>
                     </div>
                   ) : (
-                    visibleLeads.map((lead, idx) => (
+                    filteredLeads.map((lead, idx) => (
                       <LeadCard
                         key={lead.id}
                         lead={lead}
@@ -703,6 +860,19 @@ export default function DashboardPage() {
             setCurrentPage("leads");
           }}
           onCancel={() => setShowFullForm(false)}
+        />
+      )}
+
+      {/* WhatsApp Lead Modal */}
+      {showWhatsAppModal && (
+        <WhatsAppLeadModal
+          isAdmin={isAdmin}
+          onClose={() => setShowWhatsAppModal(false)}
+          onLeadCreated={(id) => {
+            setShowWhatsAppModal(false);
+            setSelectedLeadId(id);
+            setView("detail");
+          }}
         />
       )}
     </div>

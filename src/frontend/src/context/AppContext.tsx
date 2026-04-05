@@ -306,11 +306,20 @@ const SEED_LEADS: Lead[] = [
 interface AppContextType {
   currentUser: AppUser | null;
   leads: Lead[];
+  agentList: AppUser[];
   login: (email: string, password: string) => boolean;
   logout: () => void;
   addLead: (assignedAgent?: string) => void;
   addLeadFull: (data: Partial<Lead> & { assignedAgent: string }) => string;
   updateLead: (id: string, updates: Partial<Lead>) => void;
+  addAgent: (agent: AppUser) => void;
+  removeAgent: (email: string) => void;
+  createLeadFromMessage: (message: string) => {
+    success: boolean;
+    leadId?: string;
+    mobile?: string;
+    error?: string;
+  };
   toasts: ToastMessage[];
   addToast: (type: ToastMessage["type"], message: string) => void;
   removeToast: (id: string) => void;
@@ -321,6 +330,7 @@ const AppContext = createContext<AppContextType | null>(null);
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [leads, setLeads] = useState<Lead[]>(SEED_LEADS);
+  const [agentList, setAgentList] = useState<AppUser[]>(AGENTS);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = useCallback(
@@ -338,16 +348,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const login = useCallback((email: string, password: string): boolean => {
-    const user = USERS.find(
-      (u) => u.email === email && u.password === password,
-    );
-    if (user) {
-      setCurrentUser(user);
-      return true;
-    }
-    return false;
-  }, []);
+  const login = useCallback(
+    (email: string, password: string): boolean => {
+      // Check admin first
+      const adminUser = {
+        email: "admin@insurance.com",
+        password: "admin123",
+        name: "Admin User",
+        role: "admin" as const,
+      };
+      if (email === adminUser.email && password === adminUser.password) {
+        setCurrentUser(adminUser);
+        return true;
+      }
+      // Check dynamic agent list
+      const user = agentList.find(
+        (u) => u.email === email && u.password === password,
+      );
+      if (user) {
+        setCurrentUser(user);
+        return true;
+      }
+      return false;
+    },
+    [agentList],
+  );
 
   const logout = useCallback(() => {
     setCurrentUser(null);
@@ -383,16 +408,65 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   }, []);
 
+  const addAgent = useCallback((agent: AppUser) => {
+    setAgentList((prev) => {
+      if (prev.find((a) => a.email === agent.email)) return prev;
+      return [...prev, agent];
+    });
+  }, []);
+
+  const removeAgent = useCallback((email: string) => {
+    setAgentList((prev) => prev.filter((a) => a.email !== email));
+  }, []);
+
+  const createLeadFromMessage = useCallback(
+    (
+      message: string,
+    ): {
+      success: boolean;
+      leadId?: string;
+      mobile?: string;
+      error?: string;
+    } => {
+      // Extract 10-digit Indian mobile
+      const mobileMatch = message.match(/[6-9]\d{9}/);
+      if (!mobileMatch)
+        return { success: false, error: "No mobile number found in message" };
+      const mobile = mobileMatch[0];
+
+      // Check insurance keywords
+      const insuranceKeywords =
+        /insurance|policy|rc|vehicle|car|bike|renew|motor/i;
+      if (!insuranceKeywords.test(message))
+        return {
+          success: false,
+          error: "Message doesn't appear to be insurance-related",
+        };
+
+      const newId = addLeadFull({
+        mobileNumber: mobile,
+        assignedAgent: "agent1@insurance.com",
+        name: "",
+      });
+      return { success: true, leadId: newId, mobile };
+    },
+    [addLeadFull],
+  );
+
   return (
     <AppContext.Provider
       value={{
         currentUser,
         leads,
+        agentList,
         login,
         logout,
         addLead,
         addLeadFull,
         updateLead,
+        addAgent,
+        removeAgent,
+        createLeadFromMessage,
         toasts,
         addToast,
         removeToast,

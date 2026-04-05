@@ -5,6 +5,7 @@ import {
   LogOut,
   Settings,
   Shield,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import { useApp } from "../context/AppContext";
@@ -14,6 +15,7 @@ type Page = "dashboard" | "leads" | "reports" | "settings";
 interface SidebarProps {
   currentPage: Page;
   onNavigate: (page: Page) => void;
+  onAdminPanel?: () => void;
 }
 
 const navItems: {
@@ -27,8 +29,13 @@ const navItems: {
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
+export default function Sidebar({
+  currentPage,
+  onNavigate,
+  onAdminPanel,
+}: SidebarProps) {
   const { currentUser, logout } = useApp();
+  const isAdmin = currentUser?.role === "admin";
 
   return (
     <aside
@@ -74,6 +81,19 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
             {label}
           </button>
         ))}
+
+        {/* Admin Control Panel - admin only */}
+        {isAdmin && onAdminPanel && (
+          <button
+            type="button"
+            onClick={onAdminPanel}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors mt-1"
+            data-ocid="sidebar.admin_panel.link"
+          >
+            <ShieldCheck className="w-5 h-5 flex-shrink-0" />
+            Admin Panel
+          </button>
+        )}
       </nav>
 
       <div className="px-3 py-2 border-t border-white/10">
