@@ -149,8 +149,9 @@ export default function LoginPage({ onTrackPolicy }: LoginPageProps) {
                 autoComplete="email"
                 className="h-11 text-white placeholder:text-slate-500"
                 style={{
-                  background: "rgba(255,255,255,0.06)",
-                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: "rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(139,92,246,0.4)",
+                  color: "#ffffff",
                 }}
                 data-ocid="login.input"
               />
@@ -173,8 +174,9 @@ export default function LoginPage({ onTrackPolicy }: LoginPageProps) {
                   autoComplete="current-password"
                   className="h-11 pr-10 text-white placeholder:text-slate-500"
                   style={{
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.10)",
+                    border: "1px solid rgba(139,92,246,0.4)",
+                    color: "#ffffff",
                   }}
                   data-ocid="login.input"
                 />

@@ -105,29 +105,183 @@ async function callPriyaAI(
     (l) => l.workflowStatus !== "Completed",
   ).length;
 
-  const systemPrompt = `You are Priya, a professional AI insurance assistant for PB Insurance AI platform. You speak in a natural Hindi+English mix (Hinglish) and also understand Marathi.
+  // ---- Build rich real-time dashboard context ----
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10); // "YYYY-MM-DD"
 
-Your expertise:
-- Motor insurance (private car, two-wheeler, commercial vehicle, taxi, goods carrier, EV)
-- Policy types: Comprehensive, Third Party, SAOD, Bundled, Long-term, PAYD
-- NCB (No Claim Bonus): slabs 20/25/35/45/50%, transfer rules, protection
-- IDV (Insured Declared Value): calculation, depreciation, impact on premium
-- Claim process: cashless vs reimbursement, documents needed, rejection reasons, IRDA Ombudsman
-- Add-ons: Zero Depreciation, Engine Protection, Roadside Assistance, Return to Invoice, NCB Protect
-- KYC/CKYC requirements per IRDA rules
-- PB Partners portal workflow: vehicle entry, variant/fuel check, RC verification, quotation, proposal, payment
-- Agent workflow in PB Insurance AI app: lead creation, document upload, status tracking, payment links
-- Insurance companies comparison: CSR ratios, network garages, best plans
-- IRDA regulations, compliance, mandatory PA cover rules
+  const todayLeads = leads.filter(
+    (l) => l.createdAt && l.createdAt.slice(0, 10) === todayStr,
+  );
+  const todayCompleted = todayLeads.filter(
+    (l) => l.workflowStatus === "Completed",
+  );
+  const todayBusiness = todayCompleted.reduce(
+    (sum, l) => sum + (l.policyAmount || 0),
+    0,
+  );
+  const todayCommission = todayCompleted.reduce(
+    (sum, l) =>
+      sum + (l.policyAmount || 0) * ((l.commissionPercent || 0) / 100),
+    0,
+  );
 
-Rules:
-1. Reply in Hinglish (Hindi+English mix). Be friendly, professional, concise.
-2. If the question is NOT related to motor insurance or the insurance app workflow, reply: "Sorry, ye motor insurance se related nahi hai. 🙏 Main sirf insurance related help kar sakti hoon. Kya main aapki kisi aur cheez mein madad kar sakti hoon?"
-3. Give clear, short, useful answers. Maximum 150 words unless step-by-step guidance is needed.
-4. Never repeat the same answer twice in a conversation.
-5. When guiding step-by-step (PB Portal, document upload, etc.), number each step clearly.
+  const totalBusiness = leads
+    .filter((l) => l.workflowStatus === "Completed")
+    .reduce((sum, l) => sum + (l.policyAmount || 0), 0);
+  const totalCommission = leads
+    .filter((l) => l.workflowStatus === "Completed")
+    .reduce(
+      (sum, l) =>
+        sum + (l.policyAmount || 0) * ((l.commissionPercent || 0) / 100),
+      0,
+    );
 
-Current leads in the system: ${leads.length} total, ${completedLeads} completed, ${pendingLeads} pending.`;
+  const docsIncomplete = leads.filter(
+    (l) => !l.docsUploaded?.rcFront || !l.docsUploaded?.rcBack || !l.panUrl,
+  ).length;
+  const paymentPendingCount = leads.filter(
+    (l) =>
+      l.workflowStatus === "Quotation Ready" ||
+      l.workflowStatus === "PB Action Required",
+  ).length;
+  const kycPendingCount = leads.filter(
+    (l) =>
+      l.workflowStatus === "Docs Pending" ||
+      l.workflowStatus === "Docs Received",
+  ).length;
+
+  const conversionRate =
+    leads.length > 0 ? Math.round((completedLeads / leads.length) * 100) : 0;
+
+  // Smart insight: leads that could be closed (in advanced stages)
+  const nearClosureLeads = leads.filter(
+    (l) =>
+      l.workflowStatus === "KYC Completed" ||
+      l.workflowStatus === "Payment Sent",
+  ).length;
+
+  const systemPrompt = [
+    "You are Priya \u2014 a Senior AI Insurance Advisor and Business Performance Assistant for PB Insurance AI platform. You speak in natural Hinglish (Hindi+English mix) and also understand Marathi.",
+    "",
+    "=== LIVE DASHBOARD DATA (Real-time) ===",
+    `TODAY (${todayStr}):`,
+    `- Leads received today: ${todayLeads.length}`,
+    `- Policies completed today: ${todayCompleted.length}`,
+    `- Business done today: \u20b9${todayBusiness.toLocaleString("en-IN")}`,
+    `- Commission earned today: \u20b9${Math.round(todayCommission).toLocaleString("en-IN")}`,
+    "",
+    "ALL TIME:",
+    `- Total Leads: ${leads.length} | Completed: ${completedLeads} | Pending: ${pendingLeads}`,
+    `- Total Business: \u20b9${totalBusiness.toLocaleString("en-IN")}`,
+    `- Total Commission: \u20b9${Math.round(totalCommission).toLocaleString("en-IN")}`,
+    `- Conversion Rate: ${conversionRate}%`,
+    "",
+    "PIPELINE STATUS:",
+    `- Documents Incomplete: ${docsIncomplete} leads (RC/PAN missing)`,
+    `- Payment/Quote Pending: ${paymentPendingCount} leads`,
+    `- KYC/Docs Collection Stage: ${kycPendingCount} leads`,
+    `- Near Closure (can close today): ${nearClosureLeads} leads`,
+    "",
+    "=== DASHBOARD QUERY RULES ===",
+    `When user asks "aaj kitna business hua", "aaj ki performance", "kitni leads aayi", "kitni pending hai", "daily report", or similar:`,
+    "- Use the LIVE data above to give a specific, personalized answer in Hinglish.",
+    `- Example format: "Aaj aapne \u20b925,000 ka business kiya aur ${todayCompleted.length} policies complete ki. ${pendingLeads} leads abhi bhi pending hain."`,
+    "- Always end with a smart suggestion or motivation.",
+    "",
+    `When user asks for insights, performance analysis, or "kya improve kar sakte hain":`,
+    "- Compare today vs potential (nearClosureLeads that could be closed)",
+    "- Mention follow-up leads and suggest action",
+    "- Give 1-2 specific, actionable growth tips based on real data",
+    "- Keep it motivating and professional",
+    "",
+    "=== PB PORTAL MASTERY ===",
+    "You guide agents step-by-step through PB Partners Portal (https://www.pbpartners.com):",
+    "Step 1 \u2014 Vehicle Entry: Enter vehicle number EXACTLY as on RC. Capital letters, no spaces/dashes. Wrong entry = wrong vehicle data.",
+    "Step 2 \u2014 Fuel Check: Select fuel type exactly matching RC (Petrol/Diesel/CNG/Electric/Hybrid). Mismatch = wrong premium + claim rejection risk.",
+    "Step 3 \u2014 Variant Check: Select exact model variant (e.g., LXI/VXI/ZXI). Affects IDV calculation. Find on RC or vehicle invoice.",
+    "Step 4 \u2014 RC Verification: Match owner name, registration date, vehicle class, engine number, chassis number. Any mismatch = flag a warning.",
+    "Step 5 \u2014 Quote Generation: Compare all plans. Best plan = Max IDV + Zero Dep + Engine Protection + RSA + NCB Protector.",
+    "Step 6 \u2014 Proposal: Fill customer details, KYC documents, nominee details. Submit proposal.",
+    "Step 7 \u2014 Payment Link: Generate link on portal, paste in app lead, send via WhatsApp to customer.",
+    "",
+    "ALWAYS warn the agent if:",
+    "- Fuel type in portal does not match RC",
+    "- Variant selected does not match RC description",
+    "- Owner name has spelling difference from RC",
+    "- CNG vehicle has petrol selected",
+    "- Registration date entered incorrectly",
+    "",
+    "=== FULL WORKFLOW ===",
+    "Lead Created \u2192 Documents Collected \u2192 Details Completed \u2192 Quotation Ready \u2192 PB Action Required \u2192 KYC Completed \u2192 Payment Sent \u2192 Policy Completed",
+    "At each stage, Priya knows what the agent must do next and says it clearly.",
+    "",
+    "=== MOTOR INSURANCE EXPERT KNOWLEDGE ===",
+    "",
+    "VEHICLE TYPES & RULES:",
+    "- Private Car (LMV): Comprehensive policy recommended. Annual or multi-year.",
+    "- Two-Wheeler (MCWG): IRDAI mandates 5-year TP for new bikes. OD can be annual.",
+    "- Commercial Vehicle (GCV/PCV): Route permit and fitness certificate required.",
+    "- Taxi/Cab: Yellow number plate = PCV policy mandatory. Seating capacity matters.",
+    "- Goods Carrier: GVW (Gross Vehicle Weight) determines premium. Permit type critical.",
+    "- Electric Vehicle (EV): RC should show 'ELECTRIC' as fuel. Battery pack coverage important. Low TP premium.",
+    "",
+    "POLICY TYPES:",
+    "- Comprehensive: OD + TP. Full coverage. Recommended for all.",
+    "- Third Party Only: Minimum mandatory by law. Only covers damage to third party.",
+    "- SAOD (Stand Alone OD): OD only \u2014 for vehicles that already have long-term TP.",
+    "- Bundled (New Car): 1-year OD + 3-year TP for new private cars.",
+    "- Long-term Comprehensive: 3+3 or 5+5 years. Best for peace of mind.",
+    "- PAYD (Pay As You Drive): Usage-based policy. Good for low-mileage vehicles.",
+    "",
+    "IDV (INSURED DECLARED VALUE):",
+    "- IDV = Current market value of vehicle. Higher IDV = higher premium but better claim payout.",
+    "- IDV depreciates annually: 0-6 months: 5%, 6-12 months: 15%, 1-2 years: 20%, 2-3 years: 30%, 3-4 years: 40%, 4-5 years: 50%.",
+    "- Always recommend maximum IDV to customer for best claim payout.",
+    "",
+    "NCB (NO CLAIM BONUS):",
+    "- NCB is discount on OD premium for claim-free years.",
+    "- Slabs: 1 year claim-free = 20%, 2 years = 25%, 3 years = 35%, 4 years = 45%, 5 years = 50%.",
+    "- NCB belongs to owner, not vehicle. Transfers on vehicle change.",
+    "- NCB is LOST if a claim is made. NCB Protector add-on saves it.",
+    "",
+    "ADD-ONS (HIGHLY RECOMMENDED):",
+    "- Zero Depreciation: No deduction on spare parts in claim. Essential for cars under 5 years.",
+    "- Engine Protection: Covers engine damage due to water ingestion, oil leakage, hydrostatic lock.",
+    "- Return to Invoice (RTI): Total loss claim pays original invoice price, not depreciated IDV.",
+    "- Roadside Assistance (RSA): 24x7 towing, fuel delivery, flat tyre help.",
+    "- NCB Protector: Preserves NCB even after one claim.",
+    "",
+    "CLAIM PROCESS:",
+    "- Cashless Claim: Repair at network garage. Insurer pays garage directly.",
+    "- Reimbursement Claim: Repair anywhere, then submit bills.",
+    "- Documents for claim: FIR (theft/accident), claim form, RC, policy copy, driving license, repair bills, photos.",
+    "- Common claim rejections: Drunk driving, unlicensed driver, policy lapsed, wrong fuel type, modified vehicle not declared.",
+    "",
+    "KYC & IRDA COMPLIANCE:",
+    "- Mandatory KYC documents: PAN card + Aadhaar (both sides) + Recent photo.",
+    "- IRDA Mandate: PA cover of min \u20b915 lakh mandatory for owner-driver.",
+    "- For commercial vehicles: route permit, fitness certificate, driver details mandatory.",
+    "",
+    "COMPANY COMPARISON (CSR = Claim Settlement Ratio):",
+    "- HDFC Ergo: CSR 98.8%, 13,000+ network garages. Best for private cars.",
+    "- Bajaj Allianz: CSR 98.5%, 4,000+ garages. Good for two-wheelers.",
+    "- ICICI Lombard: CSR 97.9%, 15,600+ garages. Largest network.",
+    "- Tata AIG: CSR 99.0%, 7,500+ garages. Best CSR, strong for commercial.",
+    "- Reliance General: CSR 98.1%, competitive premium for two-wheelers.",
+    "- Recommendation: Best claim settlement \u2192 Tata AIG. Widest network \u2192 ICICI Lombard. Two-wheelers \u2192 Bajaj Allianz.",
+    "",
+    "=== BEHAVIOR RULES ===",
+    "1. Always reply in natural Hinglish. Be warm, professional, like a senior colleague.",
+    `2. If question is NOT related to motor insurance or app workflow: "Sorry, ye motor insurance se related nahi hai. \ud83d\ude4f Main sirf insurance related help kar sakti hoon."`,
+    "3. Be concise (max 180 words) unless step-by-step guidance is needed.",
+    "4. When giving step-by-step guidance, number each step clearly.",
+    "5. When detecting errors (mismatch, missing docs, wrong data), give a clear \u26a0\ufe0f warning.",
+    "6. Suggest the next action after every response.",
+    "7. When giving business performance answers, always use real numbers from the dashboard data above.",
+    "8. For smart insights, be specific: name the exact leads, amounts, and actions to take.",
+    "9. Keep answers motivating and action-oriented.",
+    "10. When comparing insurance companies, always mention CSR% and network garage count.",
+  ].join("\n");
 
   const recentHistory = conversationHistory.slice(-10);
 
@@ -153,7 +307,7 @@ Current leads in the system: ${leads.length} total, ${completedLeads} completed,
           contents,
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 300,
+            maxOutputTokens: 350,
           },
         }),
       },
@@ -182,14 +336,46 @@ function buildAppDashboardReply(
     return "Abhi koi lead nahi hai. Naya lead add karne ke liye Dashboard pe 'New Lead' button use karein. 😊";
   }
 
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const todayLeads = leads.filter(
+    (l) => l.createdAt && l.createdAt.slice(0, 10) === todayStr,
+  );
+  const todayCompleted = todayLeads.filter(
+    (l) => l.workflowStatus === "Completed",
+  );
+  const todayBusiness = todayCompleted.reduce(
+    (sum, l) => sum + (l.policyAmount || 0),
+    0,
+  );
+  const todayCommission = todayCompleted.reduce(
+    (sum, l) =>
+      sum + (l.policyAmount || 0) * ((l.commissionPercent || 0) / 100),
+    0,
+  );
+
   const total = leads.length;
   const completed = leads.filter(
     (l) => l.workflowStatus === "Completed",
   ).length;
   const pending = total - completed;
+  const conversionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const missingDocs = leads.filter(
-    (l) => !l.docsUploaded?.rcFront || !l.docsUploaded?.rcBack || !l.panUrl,
+  const totalBusiness = leads
+    .filter((l) => l.workflowStatus === "Completed")
+    .reduce((sum, l) => sum + (l.policyAmount || 0), 0);
+  const totalCommission = leads
+    .filter((l) => l.workflowStatus === "Completed")
+    .reduce(
+      (sum, l) =>
+        sum + (l.policyAmount || 0) * ((l.commissionPercent || 0) / 100),
+      0,
+    );
+
+  const nearClosure = leads.filter(
+    (l) =>
+      l.workflowStatus === "KYC Completed" ||
+      l.workflowStatus === "Payment Sent",
   );
   const paymentPending = leads.filter(
     (l) =>
@@ -198,47 +384,44 @@ function buildAppDashboardReply(
   );
   const docsPending = leads.filter((l) => l.workflowStatus === "Docs Pending");
 
-  let actionItems = "";
-  const maxShow = 3;
-
-  if (missingDocs.length > 0) {
-    const shown = missingDocs.slice(0, maxShow);
-    for (const lead of shown) {
-      const missingList: string[] = [];
-      if (!lead.docsUploaded?.rcFront) missingList.push("RC Front");
-      if (!lead.docsUploaded?.rcBack) missingList.push("RC Back");
-      if (!lead.panUrl) missingList.push("PAN");
-      const name = lead.name || `Mobile ${lead.mobileNumber}`;
-      actionItems += `• ${name}: Documents missing (${missingList.join(", ")}) — Status: ${lead.workflowStatus}\n`;
-    }
-    if (missingDocs.length > maxShow) {
-      actionItems += `• ...aur ${missingDocs.length - maxShow} leads mein documents incomplete\n`;
-    }
+  // Smart insight line
+  let insight = "";
+  if (nearClosure.length > 0) {
+    const names = nearClosure
+      .slice(0, 2)
+      .map((l) => l.name || `Mobile ${l.mobileNumber}`)
+      .join(", ");
+    insight = `💡 Insight: ${nearClosure.length} lead${nearClosure.length > 1 ? "s" : ""} (${names}) aaj close ho sakti hai — inpe focus karein!`;
+  } else if (paymentPending.length > 0) {
+    insight = `💡 Insight: ${paymentPending.length} lead${paymentPending.length > 1 ? "s" : ""} payment stage pe hain — follow-up karein, conversion badhega!`;
+  } else if (docsPending.length > 0) {
+    insight = `💡 Insight: ${docsPending.length} lead${docsPending.length > 1 ? "s" : ""} mein documents pending hain — jaldi collect karein!`;
+  } else {
+    insight = `💡 Insight: Conversion rate ${conversionRate}% — naye leads add karein aur pipeline badhayein!`;
   }
 
-  if (paymentPending.length > 0) {
-    const shown = paymentPending.slice(0, maxShow);
-    for (const lead of shown) {
-      const name = lead.name || `Mobile ${lead.mobileNumber}`;
-      actionItems += `• ${name}: Payment pending — Status: ${lead.workflowStatus}\n`;
-    }
-  }
+  // Today summary
+  const todayLine =
+    todayLeads.length > 0
+      ? `📅 Aaj: ${todayLeads.length} lead${todayLeads.length > 1 ? "s" : ""} aayi | ${todayCompleted.length} policy complete | ₹${todayBusiness.toLocaleString("en-IN")} business | ₹${Math.round(todayCommission).toLocaleString("en-IN")} commission`
+      : "📅 Aaj: Abhi tak koi naya lead nahi aaya.";
 
+  // Next step
   let nextStep = "";
   if (docsPending.length > 0) {
-    const first = docsPending[0];
-    const name = first.name || `Mobile ${first.mobileNumber}`;
+    const name = docsPending[0].name || `Mobile ${docsPending[0].mobileNumber}`;
     nextStep = `${name} ke documents collect karein — ${docsPending.length} lead(s) mein docs missing hain.`;
   } else if (paymentPending.length > 0) {
-    nextStep = `${paymentPending.length} lead(s) ke liye payment link send karein — sabse urgent action!`;
+    nextStep = `${paymentPending.length} lead(s) ke liye payment link send karein — sabse urgent!`;
+  } else if (nearClosure.length > 0) {
+    nextStep = `${nearClosure[0].name || "Pending lead"} ka payment confirm karein — policy ready hogi!`;
   } else if (completed === total) {
-    nextStep =
-      "Sab leads complete hain! Naye leads add karein ya performance dashboard check karein. 🎉";
+    nextStep = "Sab leads complete hain! Naye leads add karein. 🎉";
   } else {
     nextStep = "Pending leads ke status update karein aur follow-up karein.";
   }
 
-  return `📊 App Dashboard Summary:\n\n✅ Total Leads: ${total} | Completed: ${completed} | Pending: ${pending}\n\n${actionItems.trim() ? `⚠️ Action Required:\n${actionItems.trim()}` : "✅ Sab leads on track hain!"}\n\n🎯 Next Step: ${nextStep}\n\nKisi specific lead ke baare mein detail chahiye? Lead ka naam batayein. 😊`;
+  return `📊 Dashboard Report:\n\n${todayLine}\n\n📈 Overall: ${total} total | ${completed} completed | ${pending} pending | ${conversionRate}% conversion\n💰 Total Business: ₹${totalBusiness.toLocaleString("en-IN")} | Commission: ₹${Math.round(totalCommission).toLocaleString("en-IN")}\n\n${insight}\n\n🎯 Next Step: ${nextStep}\n\nKisi specific lead ka detail chahiye? Naam batayein. 😊`;
 }
 
 function buildPbPortalStepReply(step: number, activeLead: Lead | null): string {
@@ -873,8 +1056,13 @@ function ChatBody({
                   : "Kuch bhi poochein Priya se\u2026"
           }
           disabled={voiceState === "listening" || voiceState === "speaking"}
-          className="flex-1 rounded-full text-sm py-2 px-4 border-0 outline-none min-w-0 text-gray-800 placeholder:text-gray-500 focus:ring-2 focus:ring-purple-400/30 shadow-sm disabled:opacity-60"
-          style={{ background: "rgba(255,255,255,0.95)" }}
+          className="flex-1 rounded-full text-sm py-2 px-4 border-0 outline-none min-w-0 font-medium focus:ring-2 focus:ring-purple-400/50 shadow-sm disabled:opacity-60"
+          style={{
+            background: "#1e1e3f",
+            color: "#ffffff",
+            caretColor: "#a78bfa",
+            border: "1px solid rgba(139,92,246,0.5)",
+          }}
           data-ocid="priya.input"
         />
 

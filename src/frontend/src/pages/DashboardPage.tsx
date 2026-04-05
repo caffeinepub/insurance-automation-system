@@ -896,10 +896,11 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search by name, mobile or email\u2026"
-                      className="w-full pl-9 pr-9 py-2 text-sm rounded-xl focus:outline-none text-white placeholder:text-slate-500"
+                      className="w-full pl-9 pr-9 py-2 text-sm rounded-xl focus:outline-none text-white placeholder:text-slate-400 font-medium"
                       style={{
-                        background: "rgba(255,255,255,0.06)",
-                        border: "1px solid rgba(255,255,255,0.12)",
+                        background: "rgba(255,255,255,0.12)",
+                        border: "1px solid rgba(139,92,246,0.35)",
+                        color: "#ffffff",
                       }}
                       data-ocid="leads.search_input"
                     />

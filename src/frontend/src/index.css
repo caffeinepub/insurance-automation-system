@@ -188,3 +188,17 @@
     opacity: 1;
   }
 }
+
+/* ── Input visibility fix (dark theme) ── */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+textarea,
+select {
+  color: #ffffff !important;
+  caret-color: #a78bfa !important;
+}
+input:not([type="checkbox"]):not([type="radio"]):not(
+    [type="range"]
+  )::placeholder,
+textarea::placeholder {
+  color: rgba(148, 163, 184, 0.8) !important;
+}

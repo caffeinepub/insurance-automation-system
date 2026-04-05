@@ -292,7 +292,13 @@ export default function FloatingAIChat() {
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about RC, KYC, payment\u2026"
-              className="flex-1 bg-white rounded-full text-sm py-2 px-4 border-0 outline-none focus:ring-2 focus:ring-[#128C7E]/30 shadow-sm min-w-0"
+              className="flex-1 rounded-full text-sm py-2 px-4 border-0 outline-none focus:ring-2 focus:ring-purple-400/30 shadow-sm min-w-0 font-medium"
+              style={{
+                background: "#1e1e3f",
+                color: "#ffffff",
+                caretColor: "#a78bfa",
+                border: "1px solid rgba(139,92,246,0.4)",
+              }}
               data-ocid="ai_chat.input"
             />
             <button
