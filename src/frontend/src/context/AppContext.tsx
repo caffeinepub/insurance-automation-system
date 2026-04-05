@@ -2,6 +2,27 @@ import type React from "react";
 import { createContext, useCallback, useContext, useState } from "react";
 import type { AppUser, Lead, ToastMessage, WorkflowStatus } from "../types";
 
+export const AGENTS: AppUser[] = [
+  {
+    email: "agent1@insurance.com",
+    password: "agent123",
+    name: "Raj Kumar",
+    role: "agent",
+  },
+  {
+    email: "agent2@insurance.com",
+    password: "agent234",
+    name: "Priti Singh",
+    role: "agent",
+  },
+  {
+    email: "agent3@insurance.com",
+    password: "agent345",
+    name: "Anil Verma",
+    role: "agent",
+  },
+];
+
 const USERS: AppUser[] = [
   {
     email: "admin@insurance.com",
@@ -9,13 +30,13 @@ const USERS: AppUser[] = [
     name: "Admin User",
     role: "admin",
   },
-  {
-    email: "agent1@insurance.com",
-    password: "agent123",
-    name: "Raj Kumar",
-    role: "agent",
-  },
+  ...AGENTS,
 ];
+
+export function getAgentName(email: string): string {
+  const found = USERS.find((u) => u.email === email);
+  return found ? found.name : email;
+}
 
 function generateMobile(): string {
   const prefixes = ["6", "7", "8", "9"];
@@ -63,6 +84,8 @@ function createDefaultLead(overrides: Partial<Lead> = {}): Lead {
     currentStep: 1,
     docsUploaded: { rcFront: false, rcBack: false, oldPolicy: false },
     createdAt: new Date().toISOString(),
+    policyAmount: 0,
+    commissionPercent: 0,
     ...overrides,
   };
 }
@@ -72,6 +95,7 @@ const SEED_LEADS: Lead[] = [
     id: "lead001",
     name: "Priya Sharma",
     mobileNumber: "9876543210",
+    assignedAgent: "agent1@insurance.com",
     workflowStatus: "Completed",
     rcStatus: "Docs Received",
     docsUploaded: { rcFront: true, rcBack: true, oldPolicy: false },
@@ -99,11 +123,14 @@ const SEED_LEADS: Lead[] = [
     rating: 5,
     currentStep: 10,
     createdAt: new Date(Date.now() - 7 * 86400000).toISOString(),
+    policyAmount: 14500,
+    commissionPercent: 15,
   }),
   createDefaultLead({
     id: "lead002",
     name: "Arjun Mehta",
     mobileNumber: "8765432109",
+    assignedAgent: "agent2@insurance.com",
     workflowStatus: "KYC Pending",
     rcStatus: "Docs Received",
     docsUploaded: { rcFront: true, rcBack: true, oldPolicy: true },
@@ -136,6 +163,7 @@ const SEED_LEADS: Lead[] = [
     id: "lead003",
     name: "Sunita Patel",
     mobileNumber: "7654321098",
+    assignedAgent: "agent1@insurance.com",
     workflowStatus: "Payment Sent",
     rcStatus: "Docs Received",
     docsUploaded: { rcFront: true, rcBack: true, oldPolicy: false },
@@ -168,7 +196,7 @@ const SEED_LEADS: Lead[] = [
     id: "lead004",
     name: "Vikram Nair",
     mobileNumber: "9123456789",
-    assignedAgent: "admin@insurance.com",
+    assignedAgent: "agent3@insurance.com",
     workflowStatus: "Completed",
     rcStatus: "Docs Received",
     docsUploaded: { rcFront: true, rcBack: true, oldPolicy: true },
@@ -196,11 +224,14 @@ const SEED_LEADS: Lead[] = [
     rating: 4,
     currentStep: 10,
     createdAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+    policyAmount: 24200,
+    commissionPercent: 12,
   }),
   createDefaultLead({
     id: "lead005",
     name: "",
     mobileNumber: "8234567890",
+    assignedAgent: "agent2@insurance.com",
     workflowStatus: "Docs Pending",
     rcStatus: "Docs Pending",
     docsUploaded: { rcFront: false, rcBack: false, oldPolicy: false },
@@ -233,6 +264,7 @@ const SEED_LEADS: Lead[] = [
     id: "lead006",
     name: "Divya Reddy",
     mobileNumber: "6345678901",
+    assignedAgent: "agent3@insurance.com",
     workflowStatus: "Quotation Ready",
     rcStatus: "Docs Received",
     docsUploaded: { rcFront: true, rcBack: true, oldPolicy: false },
@@ -268,7 +300,7 @@ interface AppContextType {
   leads: Lead[];
   login: (email: string, password: string) => boolean;
   logout: () => void;
-  addLead: () => void;
+  addLead: (assignedAgent?: string) => void;
   updateLead: (id: string, updates: Partial<Lead>) => void;
   toasts: ToastMessage[];
   addToast: (type: ToastMessage["type"], message: string) => void;
@@ -312,10 +344,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCurrentUser(null);
   }, []);
 
-  const addLead = useCallback(() => {
-    const newLead = createDefaultLead({
-      assignedAgent: "agent1@insurance.com",
-    });
+  const addLead = useCallback((assignedAgent?: string) => {
+    const agent = assignedAgent ?? "agent1@insurance.com";
+    const newLead = createDefaultLead({ assignedAgent: agent });
     setLeads((prev) => [newLead, ...prev]);
   }, []);
 

@@ -66,6 +66,9 @@ export interface Lead {
     oldPolicy: boolean;
   };
   createdAt: string;
+  // Business tracking fields (set when status = Completed)
+  policyAmount: number;
+  commissionPercent: number;
 }
 
 export interface ToastMessage {

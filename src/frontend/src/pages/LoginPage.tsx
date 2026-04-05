@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Shield } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AGENTS } from "../context/AppContext";
 import { useApp } from "../context/AppContext";
 
 export default function LoginPage() {
@@ -135,6 +136,7 @@ export default function LoginPage() {
               Demo Credentials
             </p>
             <div className="space-y-2">
+              {/* Admin */}
               <button
                 type="button"
                 className="w-full flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2.5 cursor-pointer hover:bg-blue-100 transition-colors text-left"
@@ -144,7 +146,9 @@ export default function LoginPage() {
                 }}
               >
                 <div>
-                  <p className="text-xs font-semibold text-blue-800">Admin</p>
+                  <p className="text-xs font-semibold text-blue-800">
+                    Admin User
+                  </p>
                   <p className="text-xs text-blue-600">
                     admin@insurance.com / admin123
                   </p>
@@ -153,24 +157,30 @@ export default function LoginPage() {
                   Admin
                 </span>
               </button>
-              <button
-                type="button"
-                className="w-full flex items-center justify-between bg-green-50 rounded-lg px-3 py-2.5 cursor-pointer hover:bg-green-100 transition-colors text-left"
-                onClick={() => {
-                  setEmail("agent1@insurance.com");
-                  setPassword("agent123");
-                }}
-              >
-                <div>
-                  <p className="text-xs font-semibold text-green-800">Agent</p>
-                  <p className="text-xs text-green-600">
-                    agent1@insurance.com / agent123
-                  </p>
-                </div>
-                <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-medium">
-                  Agent
-                </span>
-              </button>
+              {/* Agents */}
+              {AGENTS.map((agent) => (
+                <button
+                  key={agent.email}
+                  type="button"
+                  className="w-full flex items-center justify-between bg-green-50 rounded-lg px-3 py-2.5 cursor-pointer hover:bg-green-100 transition-colors text-left"
+                  onClick={() => {
+                    setEmail(agent.email);
+                    setPassword(agent.password);
+                  }}
+                >
+                  <div>
+                    <p className="text-xs font-semibold text-green-800">
+                      {agent.name}
+                    </p>
+                    <p className="text-xs text-green-600">
+                      {agent.email} / {agent.password}
+                    </p>
+                  </div>
+                  <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-medium">
+                    Agent
+                  </span>
+                </button>
+              ))}
             </div>
             <p className="text-xs text-gray-400 mt-2 text-center">
               Click a row to auto-fill credentials

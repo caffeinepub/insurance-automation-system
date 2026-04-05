@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url("/assets/fonts/Figtree.woff2") format("woff2");
+}
+
+@font-face {
   font-family: "Plus Jakarta Sans";
   font-style: normal;
   font-weight: 300 700;
@@ -12,47 +20,47 @@
 
 @layer base {
   :root {
-    --radius: 0.625rem;
+    --radius: 0.75rem;
 
-    /* Light mode — white cards on light gray canvas, blue accents */
-    --background: 0.965 0.004 247;
-    --foreground: 0.17 0.01 260;
+    /* Light mode — clean white cards on soft gray, deep navy accents */
+    --background: 0.97 0.004 240;
+    --foreground: 0.16 0.012 255;
     --card: 1 0 0;
-    --card-foreground: 0.17 0.01 260;
+    --card-foreground: 0.16 0.012 255;
     --popover: 1 0 0;
-    --popover-foreground: 0.17 0.01 260;
+    --popover-foreground: 0.16 0.012 255;
 
-    /* primary = near-black #111827 */
-    --primary: 0.19 0.01 260;
+    /* primary = deep navy */
+    --primary: 0.22 0.035 255;
     --primary-foreground: 0.99 0 0;
 
-    /* secondary = light with border */
-    --secondary: 0.97 0.004 247;
-    --secondary-foreground: 0.17 0.01 260;
+    /* secondary = soft gray */
+    --secondary: 0.95 0.005 240;
+    --secondary-foreground: 0.25 0.012 255;
 
-    --muted: 0.97 0.004 247;
-    --muted-foreground: 0.55 0.01 250;
+    --muted: 0.96 0.004 240;
+    --muted-foreground: 0.52 0.012 250;
 
-    /* accent = blue #2563EB */
-    --accent: 0.55 0.22 262;
+    /* accent = vibrant blue */
+    --accent: 0.54 0.23 258;
     --accent-foreground: 0.99 0 0;
 
-    --destructive: 0.55 0.22 27;
+    --destructive: 0.52 0.22 25;
     --destructive-foreground: 0.99 0 0;
 
-    --border: 0.91 0.004 247;
-    --input: 0.91 0.004 247;
-    --ring: 0.55 0.22 262;
+    --border: 0.91 0.006 245;
+    --input: 0.91 0.006 245;
+    --ring: 0.54 0.23 258;
 
     /* sidebar tokens */
-    --sidebar: 0.15 0.015 255;
-    --sidebar-foreground: 0.75 0.01 250;
-    --sidebar-primary: 0.55 0.22 262;
+    --sidebar: 0.14 0.018 255;
+    --sidebar-foreground: 0.78 0.01 250;
+    --sidebar-primary: 0.54 0.23 258;
     --sidebar-primary-foreground: 0.99 0 0;
-    --sidebar-accent: 0.22 0.015 255;
+    --sidebar-accent: 0.21 0.018 255;
     --sidebar-accent-foreground: 0.97 0 0;
-    --sidebar-border: 0.25 0.015 255;
-    --sidebar-ring: 0.55 0.22 262;
+    --sidebar-border: 0.24 0.018 255;
+    --sidebar-ring: 0.54 0.23 258;
 
     --chart-1: 0.646 0.222 41.116;
     --chart-2: 0.6 0.118 184.704;
@@ -67,6 +75,12 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+    font-family: "Figtree", "Plus Jakarta Sans", ui-sans-serif, system-ui,
+      sans-serif;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
   }
 }

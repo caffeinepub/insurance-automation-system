@@ -1,38 +1,40 @@
 import { Button } from "@/components/ui/button";
 import {
-  Bell,
   CheckCircle2,
   Clock,
   DollarSign,
   ExternalLink,
   FileText,
+  LogOut,
   Plus,
+  Shield,
   Star,
   TrendingUp,
+  Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import LeadDetailPanel from "../components/LeadDetailPanel";
-import LeadTable from "../components/LeadTable";
-import LeadWorkflowModal from "../components/LeadWorkflowModal";
+import LeadCard from "../components/LeadCard";
+import LeadDetailPage from "../components/LeadDetailPage";
 import Sidebar from "../components/Sidebar";
 import { useApp } from "../context/AppContext";
 import type { Lead } from "../types";
 
 type Page = "dashboard" | "leads" | "reports" | "settings";
+type DashboardView = "list" | "detail";
 
 export default function DashboardPage() {
-  const { currentUser, leads, addLead } = useApp();
+  const { currentUser, leads, addLead, logout } = useApp();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [detailLead, setDetailLead] = useState<Lead | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [view, setView] = useState<DashboardView>("list");
+  const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
+
+  const isAdmin = currentUser?.role === "admin";
 
   const visibleLeads = useMemo(() => {
-    if (currentUser?.role === "admin") return leads;
+    if (isAdmin) return leads;
     return leads.filter((l) => l.assignedAgent === currentUser?.email);
-  }, [leads, currentUser]);
+  }, [leads, currentUser, isAdmin]);
 
   const stats = useMemo(() => {
     const totalLeads = visibleLeads.length;
@@ -47,11 +49,21 @@ export default function DashboardPage() {
           l.kycStatus !== "KYC Completed"),
     ).length;
     const completed = visibleLeads.filter(
-      (l) => l.policyStatus === "Completed",
+      (l) => l.workflowStatus === "Completed",
     ).length;
-    const totalBusiness = visibleLeads
-      .filter((l) => l.policyStatus === "Completed")
-      .reduce((sum, l) => sum + l.quoteAmount, 0);
+    const completedLeads = visibleLeads.filter(
+      (l) => l.workflowStatus === "Completed",
+    );
+    const totalBusiness = completedLeads.reduce(
+      (sum, l) => sum + (l.policyAmount || 0),
+      0,
+    );
+    const totalCommission = completedLeads.reduce(
+      (sum, l) =>
+        sum +
+        Math.round(((l.policyAmount || 0) * (l.commissionPercent || 0)) / 100),
+      0,
+    );
     const ratedLeads = visibleLeads.filter((l) => l.rating !== null);
     const avgRating =
       ratedLeads.length > 0
@@ -66,32 +78,27 @@ export default function DashboardPage() {
       pending,
       completed,
       totalBusiness,
+      totalCommission,
       avgRating,
     };
   }, [visibleLeads]);
 
-  const openLead = (lead: Lead) => {
-    setSelectedLead(lead);
-    setIsModalOpen(true);
+  const handleOpenLead = (lead: Lead) => {
+    setSelectedLeadId(lead.id);
+    setView("detail");
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setTimeout(() => setSelectedLead(null), 300);
-  };
-
-  const openDetail = (lead: Lead) => {
-    setDetailLead(lead);
-    setIsDetailOpen(true);
-  };
-
-  const closeDetail = () => {
-    setIsDetailOpen(false);
-    setTimeout(() => setDetailLead(null), 300);
+  const handleBack = () => {
+    setView("list");
+    setSelectedLeadId(null);
   };
 
   const handleAddLead = () => {
-    addLead();
+    // Assign new lead to current agent, or first agent if admin
+    const agentEmail = isAdmin
+      ? "agent1@insurance.com"
+      : (currentUser?.email ?? "agent1@insurance.com");
+    addLead(agentEmail);
     toast.success("New lead created!");
   };
 
@@ -104,7 +111,7 @@ export default function DashboardPage() {
       bg: "bg-blue-50",
     },
     {
-      label: "Total Policies",
+      label: "Policies",
       value: stats.totalPolicies,
       icon: FileText,
       color: "text-purple-600",
@@ -125,7 +132,7 @@ export default function DashboardPage() {
       bg: "bg-green-50",
     },
     {
-      label: "Total Business",
+      label: "Business",
       value: `\u20b9${stats.totalBusiness.toLocaleString("en-IN")}`,
       icon: DollarSign,
       color: "text-teal-600",
@@ -140,158 +147,228 @@ export default function DashboardPage() {
     },
   ];
 
+  // Detail view
+  if (view === "detail" && selectedLeadId) {
+    return (
+      <div className="flex h-screen bg-background overflow-hidden">
+        <div className="hidden md:block">
+          <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+        </div>
+        <main className="flex-1 md:ml-[240px] overflow-y-auto">
+          <LeadDetailPage leadId={selectedLeadId} onBack={handleBack} />
+        </main>
+      </div>
+    );
+  }
+
+  // List view
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+      <div className="hidden md:block">
+        <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
+      </div>
 
-      <main className="flex-1 ml-[240px] overflow-y-auto">
-        {currentPage !== "dashboard" && currentPage !== "leads" ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-                <Clock className="w-8 h-8 text-gray-400" />
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                Coming Soon
-              </h2>
-              <p className="text-gray-500 text-sm">
-                This feature is under development.
-              </p>
-              <Button
-                onClick={() => setCurrentPage("dashboard")}
-                className="mt-4 bg-gray-900 hover:bg-gray-800 text-white"
-              >
-                Back to Dashboard
-              </Button>
+      <div className="flex-1 md:ml-[240px] flex flex-col overflow-hidden">
+        {/* Mobile top nav bar */}
+        <header className="md:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200 shadow-xs flex-shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+              <Shield className="w-4 h-4 text-white" />
             </div>
+            <span className="text-sm font-bold text-gray-900">InsureFlow</span>
           </div>
-        ) : (
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wider font-medium mb-0.5">
-                  Dashboard
-                </p>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Good day, {currentUser?.name}! &#128075;
-                </h1>
-                <p className="text-sm text-gray-500 mt-0.5">
-                  Here&apos;s your insurance pipeline at a glance.
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <a
-                  href="https://www.pbpartners.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm"
-                  data-ocid="header.pb_portal.button"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Open PB Portal
-                </a>
-                <button
-                  type="button"
-                  className="relative p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-white border border-gray-200 transition-colors"
-                >
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-                </button>
-                <div className="flex items-center gap-2.5 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-xs">
-                  <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
-                    {currentUser?.name.charAt(0)}
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-900">
-                      {currentUser?.name}
-                    </p>
-                    <p className="text-[10px] text-gray-400 capitalize">
-                      {currentUser?.role}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://www.pbpartners.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors"
+              data-ocid="header.pb_portal.button"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              PB Portal
+            </a>
+            <button
+              type="button"
+              onClick={logout}
+              className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors"
+              data-ocid="mobile.logout.button"
+              aria-label="Logout"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </header>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-              {summaryCards.map((card, i) => (
-                <div
-                  key={card.label}
-                  className="bg-white rounded-xl border border-gray-200 shadow-xs p-4 flex flex-col gap-2"
-                  data-ocid={`dashboard.card.${i + 1}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500 font-medium">
-                      {card.label}
-                    </span>
-                    <div
-                      className={`w-8 h-8 rounded-lg ${card.bg} flex items-center justify-center`}
-                    >
-                      <card.icon className={`w-4 h-4 ${card.color}`} />
-                    </div>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900 leading-none">
-                    {card.value}
-                  </p>
+        <main className="flex-1 overflow-y-auto">
+          {currentPage !== "dashboard" && currentPage !== "leads" ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center p-8">
+                <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <Clock className="w-8 h-8 text-gray-400" />
                 </div>
-              ))}
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-200 shadow-xs">
-              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-                <div>
-                  <h2 className="text-base font-semibold text-gray-900">
-                    Lead Management Table
-                  </h2>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {visibleLeads.length} total leads &bull; Click a row to view
-                    details
-                  </p>
-                </div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  Coming Soon
+                </h2>
+                <p className="text-gray-500 text-sm">
+                  This feature is under development.
+                </p>
                 <Button
-                  onClick={handleAddLead}
-                  className="bg-gray-900 hover:bg-gray-800 text-white text-sm h-9 px-4 flex items-center gap-2"
-                  data-ocid="leads.add_button"
+                  onClick={() => setCurrentPage("dashboard")}
+                  className="mt-4 bg-gray-900 hover:bg-gray-800 text-white"
                 >
-                  <Plus className="w-4 h-4" />
-                  New Lead
+                  Back to Dashboard
                 </Button>
               </div>
-              <LeadTable
-                leads={visibleLeads}
-                onOpenLead={openLead}
-                onOpenDetail={openDetail}
-              />
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+              {/* Desktop page header */}
+              <div className="hidden md:flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-0.5">
+                    {isAdmin ? "Admin Dashboard" : "Agent Dashboard"}
+                  </p>
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    Good day, {currentUser?.name}! &#128075;
+                  </h1>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {isAdmin
+                      ? "Viewing all leads across all agents."
+                      : "Viewing your assigned leads."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a
+                    href="https://www.pbpartners.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-xs"
+                    data-ocid="header.pb_portal.button"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Open PB Portal
+                  </a>
+                  <div className="flex items-center gap-2.5 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-xs">
+                    <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">
+                      {currentUser?.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-900">
+                        {currentUser?.name}
+                      </p>
+                      <p className="text-[10px] text-gray-400 capitalize">
+                        {currentUser?.role}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-        <footer className="px-6 py-4 text-center text-xs text-gray-400 border-t border-gray-100 mt-4">
-          &copy; {new Date().getFullYear()}. Built with &#10084;&#65039; using{" "}
-          <a
-            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 hover:underline"
-          >
-            caffeine.ai
-          </a>
-        </footer>
-      </main>
+              {/* Mobile greeting */}
+              <div className="md:hidden">
+                <h1 className="text-lg font-bold text-gray-900">
+                  Hi, {currentUser?.name?.split(" ")[0]}! &#128075;
+                </h1>
+                <p className="text-xs text-gray-500">
+                  {isAdmin ? "All leads" : "Your leads"}
+                </p>
+              </div>
 
-      {selectedLead && (
-        <LeadWorkflowModal
-          lead={selectedLead}
-          isOpen={isModalOpen}
-          onClose={closeModal}
-        />
-      )}
+              {/* Stats grid */}
+              <div className="grid grid-cols-3 md:grid-cols-6 gap-2.5 md:gap-4">
+                {summaryCards.map((card, i) => (
+                  <div
+                    key={card.label}
+                    className="bg-white rounded-xl border border-gray-200 shadow-xs p-3 md:p-4 flex flex-col gap-1.5"
+                    data-ocid={`dashboard.card.${i + 1}`}
+                  >
+                    <div
+                      className={`w-7 h-7 rounded-lg ${card.bg} flex items-center justify-center`}
+                    >
+                      <card.icon className={`w-3.5 h-3.5 ${card.color}`} />
+                    </div>
+                    <p className="text-lg md:text-2xl font-bold text-gray-900 leading-none">
+                      {card.value}
+                    </p>
+                    <span className="text-[10px] md:text-xs text-gray-500 font-medium">
+                      {card.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
 
-      <LeadDetailPanel
-        lead={detailLead}
-        isOpen={isDetailOpen}
-        onClose={closeDetail}
-      />
+              {/* Lead List */}
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xs">
+                <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-400" />
+                    <h2 className="text-sm font-bold text-gray-900">Leads</h2>
+                    <span className="text-xs text-gray-400 font-medium">
+                      ({visibleLeads.length})
+                    </span>
+                    {isAdmin && (
+                      <span className="text-[10px] bg-blue-50 text-blue-600 font-semibold px-2 py-0.5 rounded-full border border-blue-100">
+                        All Agents
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleAddLead}
+                    className="bg-gray-900 hover:bg-gray-800 text-white text-xs h-8 px-3 flex items-center gap-1.5 rounded-lg"
+                    data-ocid="leads.add_button"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    New Lead
+                  </Button>
+                </div>
+
+                <div className="p-3 space-y-2">
+                  {visibleLeads.length === 0 ? (
+                    <div
+                      className="flex flex-col items-center justify-center py-12 text-center"
+                      data-ocid="leads.empty_state"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mb-3">
+                        <Users className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <p className="text-sm font-semibold text-gray-600">
+                        No leads yet
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Tap "New Lead" to get started
+                      </p>
+                    </div>
+                  ) : (
+                    visibleLeads.map((lead, idx) => (
+                      <LeadCard
+                        key={lead.id}
+                        lead={lead}
+                        index={idx}
+                        onClick={handleOpenLead}
+                        showAgent={isAdmin}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Footer */}
+          <footer className="px-4 py-4 text-center text-xs text-gray-400 border-t border-gray-100 mt-2">
+            &copy; {new Date().getFullYear()}. Built with &#10084;&#65039; using{" "}
+            <a
+              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 hover:underline"
+            >
+              caffeine.ai
+            </a>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }
