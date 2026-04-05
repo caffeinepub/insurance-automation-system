@@ -43,11 +43,11 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           <Shield className="w-5 h-5 text-white" />
         </div>
         <div>
-          <span className="text-white font-bold text-base tracking-tight">
-            InsureFlow
+          <span className="text-white font-bold text-sm tracking-tight leading-tight">
+            PB Insurance AI
           </span>
           <p className="text-[10px] text-slate-400 leading-tight">
-            Insurance System
+            by Prashant
           </p>
         </div>
       </div>
@@ -109,6 +109,15 @@ export default function Sidebar({ currentPage, onNavigate }: SidebarProps) {
           <LogOut className="w-4 h-4" />
           Log out
         </button>
+      </div>
+
+      {/* Sidebar footer */}
+      <div className="px-4 py-3 border-t border-white/10">
+        <p className="text-[10px] text-slate-500 text-center leading-tight">
+          Powered by Prashant Chandratre
+          <br />
+          <span className="text-slate-400">7709446589</span>
+        </p>
       </div>
     </aside>
   );

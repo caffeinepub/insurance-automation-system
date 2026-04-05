@@ -51,7 +51,7 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 10);
 }
 
-function createDefaultLead(overrides: Partial<Lead> = {}): Lead {
+export function createDefaultLead(overrides: Partial<Lead> = {}): Lead {
   return {
     id: generateId(),
     name: "",
@@ -301,6 +301,7 @@ interface AppContextType {
   login: (email: string, password: string) => boolean;
   logout: () => void;
   addLead: (assignedAgent?: string) => void;
+  addLeadFull: (data: Partial<Lead> & { assignedAgent: string }) => string;
   updateLead: (id: string, updates: Partial<Lead>) => void;
   toasts: ToastMessage[];
   addToast: (type: ToastMessage["type"], message: string) => void;
@@ -350,6 +351,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setLeads((prev) => [newLead, ...prev]);
   }, []);
 
+  const addLeadFull = useCallback(
+    (data: Partial<Lead> & { assignedAgent: string }): string => {
+      const newLead = createDefaultLead(data);
+      setLeads((prev) => [newLead, ...prev]);
+      return newLead.id;
+    },
+    [],
+  );
+
   const updateLead = useCallback((id: string, updates: Partial<Lead>) => {
     setLeads((prev) =>
       prev.map((lead) => (lead.id === id ? { ...lead, ...updates } : lead)),
@@ -364,6 +374,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         addLead,
+        addLeadFull,
         updateLead,
         toasts,
         addToast,

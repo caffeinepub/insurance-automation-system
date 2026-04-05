@@ -12,6 +12,7 @@ import {
   ArrowLeft,
   Bell,
   ExternalLink,
+  FileImage,
   Link2,
   MessageCircle,
   UserCheck,
@@ -178,6 +179,15 @@ export default function LeadDetailPage({
 
   const assignedAgentName =
     AGENTS.find((a) => a.email === assignedAgent)?.name ?? assignedAgent;
+
+  const docItems = [
+    { label: "RC Front", url: lead.rcFrontUrl },
+    { label: "RC Back", url: lead.rcBackUrl },
+    { label: "Old Policy", url: lead.oldPolicyUrl },
+    { label: "PAN Card", url: lead.panUrl },
+    { label: "Aadhaar Front", url: lead.aadhaarFrontUrl },
+    { label: "Aadhaar Back", url: lead.aadhaarBackUrl },
+  ].filter((d): d is { label: string; url: string } => !!d.url);
 
   return (
     <div className="min-h-full bg-background">
@@ -515,7 +525,7 @@ export default function LeadDetailPage({
                   title={savedLink}
                 >
                   {savedLink.length > 38
-                    ? `${savedLink.slice(0, 38)}…`
+                    ? `${savedLink.slice(0, 38)}\u2026`
                     : savedLink}
                 </a>
                 <a
@@ -530,6 +540,43 @@ export default function LeadDetailPage({
             )}
           </div>
         </section>
+
+        {/* UPLOADED DOCUMENTS section */}
+        {docItems.length > 0 && (
+          <section
+            className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden"
+            data-ocid="lead.docs.section"
+          >
+            <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+              <div className="flex items-center gap-2">
+                <FileImage className="w-3.5 h-3.5 text-blue-500" />
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                  Uploaded Documents
+                </p>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-2 gap-3">
+                {docItems.map((doc, idx) => (
+                  <div
+                    key={doc.label}
+                    className="border border-gray-200 rounded-xl p-2 overflow-hidden"
+                    data-ocid={`lead.docs.item.${idx + 1}`}
+                  >
+                    <p className="text-[10px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wide">
+                      {doc.label}
+                    </p>
+                    <img
+                      src={doc.url}
+                      alt={doc.label}
+                      className="w-full h-20 object-cover rounded-lg bg-gray-100"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ACTIONS section */}
         <section className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
@@ -627,7 +674,7 @@ export default function LeadDetailPage({
           className="w-full h-12 text-base font-bold bg-gray-900 hover:bg-gray-800 text-white rounded-xl shadow-sm"
           data-ocid="lead.detail.save_button"
         >
-          {isSaving ? "Saving…" : "Save Changes"}
+          {isSaving ? "Saving\u2026" : "Save Changes"}
         </Button>
       </div>
     </div>

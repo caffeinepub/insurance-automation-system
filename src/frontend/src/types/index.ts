@@ -69,6 +69,14 @@ export interface Lead {
   // Business tracking fields (set when status = Completed)
   policyAmount: number;
   commissionPercent: number;
+  // Document upload URLs (object URLs, client-side only)
+  email?: string;
+  rcFrontUrl?: string;
+  rcBackUrl?: string;
+  oldPolicyUrl?: string;
+  panUrl?: string;
+  aadhaarFrontUrl?: string;
+  aadhaarBackUrl?: string;
 }
 
 export interface ToastMessage {

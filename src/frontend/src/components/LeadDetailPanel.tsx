@@ -129,7 +129,6 @@ export default function LeadDetailPanel({
     setCommissionPercent(liveLead.commissionPercent ?? 0);
   }
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentional reset on close
   useEffect(() => {
     if (!isOpen) {
       initializedIdRef.current = null;

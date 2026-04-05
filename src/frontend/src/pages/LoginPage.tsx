@@ -1,13 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Shield } from "lucide-react";
+import { Eye, EyeOff, Search, Shield } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AGENTS } from "../context/AppContext";
-import { useApp } from "../context/AppContext";
+import { AGENTS, useApp } from "../context/AppContext";
 
-export default function LoginPage() {
+interface LoginPageProps {
+  onTrackPolicy?: () => void;
+}
+
+export default function LoginPage({ onTrackPolicy }: LoginPageProps) {
   const { login } = useApp();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -40,13 +43,27 @@ export default function LoginPage() {
     >
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-600 mb-4 shadow-lg">
-            <Shield className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 mb-4 shadow-lg overflow-hidden">
+            <img
+              src="/assets/generated/pb-insurance-icon-192.dim_192x192.png"
+              alt="PB Insurance"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+                e.currentTarget.parentElement
+                  ?.querySelector("svg")
+                  ?.removeAttribute("style");
+              }}
+            />
+            <Shield className="w-8 h-8 text-white hidden" />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
-            InsureFlow
+            PB Insurance AI
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-blue-300 font-medium mt-0.5">
+            by Prashant
+          </p>
+          <p className="text-xs text-slate-400 mt-1">
             Insurance Automation System
           </p>
         </div>
@@ -186,18 +203,25 @@ export default function LoginPage() {
               Click a row to auto-fill credentials
             </p>
           </div>
+
+          {/* Track policy link */}
+          {onTrackPolicy && (
+            <div className="mt-5 pt-4 border-t border-gray-100 text-center">
+              <button
+                type="button"
+                onClick={onTrackPolicy}
+                className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 transition-colors font-medium"
+                data-ocid="login.link"
+              >
+                <Search className="w-3.5 h-3.5" />
+                Track your policy status
+              </button>
+            </div>
+          )}
         </div>
 
-        <p className="text-center text-xs text-slate-500 mt-6">
-          &copy; {new Date().getFullYear()}. Built with love using{" "}
-          <a
-            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-400 hover:underline"
-          >
-            caffeine.ai
-          </a>
+        <p className="text-center text-xs text-slate-400 mt-6">
+          Powered by Prashant Chandratre | 7709446589
         </p>
       </div>
     </div>

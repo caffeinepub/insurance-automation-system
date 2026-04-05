@@ -1,20 +1,5 @@
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Award,
   BarChart3,
   CheckCircle2,
@@ -30,24 +15,23 @@ import {
   Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
 import LeadCard from "../components/LeadCard";
 import LeadDetailPage from "../components/LeadDetailPage";
+import NewLeadFullForm from "../components/NewLeadFullForm";
 import Sidebar from "../components/Sidebar";
 import { AGENTS, useApp } from "../context/AppContext";
 import type { Lead } from "../types";
 
 type Page = "dashboard" | "leads" | "reports" | "settings";
 type DashboardView = "list" | "detail";
-type PerfFilter = "today" | "month";
+type PerfFilter = "today" | "month" | "all";
 
 export default function DashboardPage() {
-  const { currentUser, leads, addLead, logout } = useApp();
+  const { currentUser, leads, logout } = useApp();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [view, setView] = useState<DashboardView>("list");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
-  const [showNewLeadDialog, setShowNewLeadDialog] = useState(false);
-  const [newLeadAgent, setNewLeadAgent] = useState(AGENTS[0].email);
+  const [showFullForm, setShowFullForm] = useState(false);
   const [perfFilter, setPerfFilter] = useState<PerfFilter>("month");
 
   const isAdmin = currentUser?.role === "admin";
@@ -131,11 +115,12 @@ export default function DashboardPage() {
         business,
         commission,
       };
-    }).filter((a) => a.policies > 0 || true); // show all agents
+    }).filter((_a) => true); // show all agents
   }, [leads, isAdmin]);
 
   // Performance filter helper
   const perfLeads = useMemo(() => {
+    if (perfFilter === "all") return leads;
     const now = new Date();
     return leads.filter((lead) => {
       const createdAt = new Date(lead.createdAt);
@@ -219,20 +204,7 @@ export default function DashboardPage() {
   };
 
   const handleAddLead = () => {
-    if (isAdmin) {
-      setNewLeadAgent(AGENTS[0].email);
-      setShowNewLeadDialog(true);
-    } else {
-      const agentEmail = currentUser?.email ?? "agent1@insurance.com";
-      addLead(agentEmail);
-      toast.success("New lead created!");
-    }
-  };
-
-  const handleCreateLead = () => {
-    addLead(newLeadAgent);
-    toast.success("New lead created!");
-    setShowNewLeadDialog(false);
+    setShowFullForm(true);
   };
 
   const summaryCards = [
@@ -347,7 +319,11 @@ export default function DashboardPage() {
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
               <Shield className="w-4 h-4 text-white" />
             </div>
-            <span className="text-sm font-bold text-gray-900">InsureFlow</span>
+            <div>
+              <span className="text-sm font-bold text-gray-900">
+                PB Insurance AI
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <a
@@ -484,201 +460,78 @@ export default function DashboardPage() {
                     </h2>
                   </div>
                   {/* Filter pill toggle */}
-                  <fieldset
-                    className="flex items-center gap-1 bg-gray-100 rounded-full p-1 border-none m-0"
-                    aria-label="Performance filter"
-                  >
-                    <legend className="sr-only">Performance filter</legend>
-                    <button
-                      type="button"
-                      onClick={() => setPerfFilter("today")}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-150 ${
-                        perfFilter === "today"
-                          ? "bg-gray-900 text-white shadow-sm"
-                          : "text-gray-500 hover:text-gray-800"
-                      }`}
-                      data-ocid="perf.filter.tab"
-                      aria-pressed={perfFilter === "today"}
-                    >
-                      Today
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPerfFilter("month")}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition-all duration-150 ${
-                        perfFilter === "month"
-                          ? "bg-gray-900 text-white shadow-sm"
-                          : "text-gray-500 hover:text-gray-800"
-                      }`}
-                      data-ocid="perf.filter.tab"
-                      aria-pressed={perfFilter === "month"}
-                    >
-                      This Month
-                    </button>
-                  </fieldset>
-                </div>
-
-                <div className="p-4">
-                  {/* ── Agent view: 4 KPI cards ── */}
-                  {!isAdmin && agentPerfKpis && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {perfKpiCards.map((card, idx) => (
-                        <div
-                          key={card.label}
-                          className={`rounded-xl border ${card.border} p-3.5 flex flex-col gap-2`}
-                          data-ocid={`perf.card.${idx + 1}`}
-                        >
-                          <div
-                            className={`w-8 h-8 rounded-lg ${card.bg} flex items-center justify-center`}
-                          >
-                            <card.icon className={`w-4 h-4 ${card.color}`} />
-                          </div>
-                          <p
-                            className={`text-xl md:text-2xl font-bold leading-none ${card.valueColor}`}
-                          >
-                            {card.value}
-                          </p>
-                          <span className="text-[11px] text-gray-500 font-medium leading-tight">
-                            {card.label}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* ── Admin view: per-agent table ── */}
-                  {isAdmin && (
-                    <div className="overflow-x-auto -mx-4 px-4">
-                      <table className="w-full text-sm min-w-[520px]">
-                        <thead>
-                          <tr className="border-b border-gray-100">
-                            <th className="text-left pb-2.5 pt-0 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                              Agent
-                            </th>
-                            <th className="text-center pb-2.5 pt-0 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                              Leads Handled
-                            </th>
-                            <th className="text-center pb-2.5 pt-0 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                              Completed Policies
-                            </th>
-                            <th className="text-right pb-2.5 pt-0 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                              Total Business
-                            </th>
-                            <th className="text-right pb-2.5 pt-0 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                              Commission Earned
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {adminPerfTable.map((agent, idx) => (
-                            <tr
-                              key={agent.email}
-                              className={`border-b border-gray-50 ${
-                                idx % 2 === 0 ? "" : "bg-gray-50/30"
-                              }`}
-                              data-ocid={`perf.row.${idx + 1}`}
-                            >
-                              <td className="py-3">
-                                <div className="flex items-center gap-2.5">
-                                  <div className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 text-xs font-bold flex-shrink-0">
-                                    {agent.name.charAt(0)}
-                                  </div>
-                                  <span className="font-medium text-gray-800">
-                                    {agent.name}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="py-3 text-center">
-                                {agent.leadsHandled > 0 ? (
-                                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
-                                    {agent.leadsHandled}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-300 text-sm">
-                                    —
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-3 text-center">
-                                {agent.completedPolicies > 0 ? (
-                                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 text-green-700 text-xs font-bold">
-                                    {agent.completedPolicies}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-300 text-sm">
-                                    —
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-3 text-right font-mono font-semibold text-gray-800">
-                                {agent.totalBusiness > 0 ? (
-                                  `\u20b9${agent.totalBusiness.toLocaleString("en-IN")}`
-                                ) : (
-                                  <span className="text-gray-300 font-normal">
-                                    —
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-3 text-right">
-                                {agent.commissionEarned > 0 ? (
-                                  <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold font-mono text-xs border border-emerald-100">
-                                    \u20b9
-                                    {agent.commissionEarned.toLocaleString(
-                                      "en-IN",
-                                    )}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-300">—</span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      {adminPerfTable.every((a) => a.leadsHandled === 0) && (
-                        <div
-                          className="text-center py-6"
-                          data-ocid="perf.empty_state"
-                        >
-                          <p className="text-xs text-gray-400">
-                            No leads in this period.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Agent Commission Breakdown (Admin only) */}
-              {isAdmin && (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-                  <div className="flex items-center gap-2 px-4 py-3.5 border-b border-gray-100">
-                    <Award className="w-4 h-4 text-emerald-500" />
-                    <h2 className="text-sm font-bold text-gray-900">
-                      Commission by Agent
-                    </h2>
+                  <div className="flex bg-gray-100 rounded-lg p-0.5">
+                    {(["today", "month", "all"] as PerfFilter[]).map((f) => (
+                      <button
+                        key={f}
+                        type="button"
+                        onClick={() => setPerfFilter(f)}
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold capitalize transition-colors ${
+                          perfFilter === f
+                            ? "bg-white shadow-xs text-gray-900"
+                            : "text-gray-500 hover:text-gray-700"
+                        }`}
+                        data-ocid={`perf.filter.${f}.tab`}
+                      >
+                        {f === "month"
+                          ? "Month"
+                          : f === "today"
+                            ? "Today"
+                            : "All Time"}
+                      </button>
+                    ))}
                   </div>
+                </div>
+
+                {/* Agent view: KPI cards */}
+                {!isAdmin && agentPerfKpis && (
+                  <div className="p-4 grid grid-cols-2 gap-3">
+                    {perfKpiCards.map((card) => (
+                      <div
+                        key={card.label}
+                        className={`rounded-xl border ${card.border} ${card.bg} p-3 space-y-1.5`}
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-white/80 flex items-center justify-center">
+                          <card.icon className={`w-4 h-4 ${card.color}`} />
+                        </div>
+                        <p
+                          className={`text-base font-bold ${card.valueColor} leading-tight`}
+                        >
+                          {card.value}
+                        </p>
+                        <p className="text-[10px] text-gray-500 font-medium">
+                          {card.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Admin view: per-agent table */}
+                {isAdmin && (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full min-w-[400px]">
                       <thead>
-                        <tr className="bg-gray-50 border-b border-gray-100">
-                          <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        <tr className="border-b border-gray-100 bg-gray-50/60">
+                          <th className="px-4 py-2.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wide">
                             Agent
                           </th>
-                          <th className="text-center px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          <th className="px-4 py-2.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                            Leads
+                          </th>
+                          <th className="px-4 py-2.5 text-center text-[11px] font-bold text-gray-500 uppercase tracking-wide">
                             Policies
                           </th>
-                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            Business (₹)
+                          <th className="px-4 py-2.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                            Business
                           </th>
-                          <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                            Commission (₹)
+                          <th className="px-4 py-2.5 text-right text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                            Commission
                           </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {agentBreakdown.map((agent, idx) => (
+                        {adminPerfTable.map((agent, idx) => (
                           <tr
                             key={agent.email}
                             className={`border-b border-gray-50 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/40"}`}
@@ -694,19 +547,24 @@ export default function DashboardPage() {
                               </div>
                             </td>
                             <td className="px-4 py-3 text-center">
+                              <span className="text-xs font-bold text-gray-700">
+                                {agent.leadsHandled}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
                               <span
                                 className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                                  agent.policies > 0
+                                  agent.completedPolicies > 0
                                     ? "bg-green-100 text-green-700"
                                     : "bg-gray-100 text-gray-400"
                                 }`}
                               >
-                                {agent.policies}
+                                {agent.completedPolicies}
                               </span>
                             </td>
                             <td className="px-4 py-3 text-right font-mono font-semibold text-gray-800">
-                              {agent.business > 0 ? (
-                                `\u20b9${agent.business.toLocaleString("en-IN")}`
+                              {agent.totalBusiness > 0 ? (
+                                `\u20b9${agent.totalBusiness.toLocaleString("en-IN")}`
                               ) : (
                                 <span className="text-gray-300 font-normal">
                                   —
@@ -714,9 +572,12 @@ export default function DashboardPage() {
                               )}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              {agent.commission > 0 ? (
+                              {agent.commissionEarned > 0 ? (
                                 <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 font-bold font-mono text-xs border border-emerald-100">
-                                  ₹{agent.commission.toLocaleString("en-IN")}
+                                  ₹
+                                  {agent.commissionEarned.toLocaleString(
+                                    "en-IN",
+                                  )}
                                 </span>
                               ) : (
                                 <span className="text-gray-300">—</span>
@@ -728,6 +589,14 @@ export default function DashboardPage() {
                         <tr className="bg-gray-50 border-t-2 border-gray-200">
                           <td className="px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wide">
                             Total
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="text-xs font-bold text-gray-700">
+                              {adminPerfTable.reduce(
+                                (s, a) => s + a.leadsHandled,
+                                0,
+                              )}
+                            </span>
                           </td>
                           <td className="px-4 py-3 text-center">
                             <span className="text-xs font-bold text-gray-700">
@@ -755,8 +624,8 @@ export default function DashboardPage() {
                       </tbody>
                     </table>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
               {/* Lead List */}
               <div className="bg-white rounded-xl border border-gray-200 shadow-xs">
@@ -817,65 +686,25 @@ export default function DashboardPage() {
 
           {/* Footer */}
           <footer className="px-4 py-4 text-center text-xs text-gray-400 border-t border-gray-100 mt-2">
-            &copy; {new Date().getFullYear()}. Built with &#10084;&#65039; using{" "}
-            <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-500 hover:underline"
-            >
-              caffeine.ai
-            </a>
+            Powered by Prashant Chandratre | 7709446589
           </footer>
         </main>
       </div>
 
-      {/* New Lead Dialog (Admin only) */}
-      <Dialog open={showNewLeadDialog} onOpenChange={setShowNewLeadDialog}>
-        <DialogContent className="sm:max-w-sm" data-ocid="new_lead.dialog">
-          <DialogHeader>
-            <DialogTitle>Assign New Lead</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="agent-select">Assign to Agent</Label>
-              <Select value={newLeadAgent} onValueChange={setNewLeadAgent}>
-                <SelectTrigger
-                  id="agent-select"
-                  className="h-11"
-                  data-ocid="new_lead.select"
-                >
-                  <SelectValue placeholder="Select agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {AGENTS.map((agent) => (
-                    <SelectItem key={agent.email} value={agent.email}>
-                      {agent.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowNewLeadDialog(false)}
-              className="flex-1"
-              data-ocid="new_lead.cancel_button"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateLead}
-              className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
-              data-ocid="new_lead.confirm_button"
-            >
-              Create Lead
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* New Lead Full Form */}
+      {showFullForm && (
+        <NewLeadFullForm
+          isAdmin={isAdmin}
+          defaultAgent={isAdmin ? AGENTS[0].email : currentUser?.email}
+          onSave={(id) => {
+            setShowFullForm(false);
+            setSelectedLeadId(id);
+            setView("detail");
+            setCurrentPage("leads");
+          }}
+          onCancel={() => setShowFullForm(false)}
+        />
+      )}
     </div>
   );
 }
