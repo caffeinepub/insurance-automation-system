@@ -425,33 +425,19 @@ function buildAppDashboardReply(
 }
 
 function buildPbPortalStepReply(step: number, activeLead: Lead | null): string {
-  const vehicleNote = activeLead
-    ? `\n📋 Lead: ${activeLead.name || "current customer"}`
-    : "";
-
   switch (step) {
     case 0:
-      return `🚗 Step 1: Vehicle Number Entry${vehicleNote}\n\nPB Portal pe vehicle number EXACTLY dalein jaise RC mein likha hai.\n✅ Capital letters use karein (MH12AB1234)\n⚠️ Space ya dash mat dalein\n⚠️ Ek bhi character galat hoga toh galat data aayega!${activeLead?.mobileNumber ? `\n\nCustomer mobile: ${activeLead.mobileNumber} — inka RC saath rakhein!` : ""}\n\nHo gaya? 'Done' bolein ➡️`;
+      return `➡️ Step 1: Sabse pehle vehicle number enter kariye\n\nPB Portal pe vehicle number EXACTLY dalein jaise RC mein likha hai.\n✅ Capital letters use karein (MH12AB1234)\n⚠️ Space ya dash mat dalein${activeLead?.mobileNumber ? `\n\nCustomer mobile: ${activeLead.mobileNumber}` : ""}\n\nHo gaya? 'Done' bolein ➡️`;
     case 1:
-      return "⛽ Step 2: Fuel Type Check\n\nRC mein jo fuel type likha hai wahi select karein:\n• Petrol / Diesel / CNG / Electric / Hybrid\n\n⚠️ Fuel type galat select karna = galat premium!\n⚠️ CNG gaadi mein Petrol select mat karna\n\nRC se verify karein aur portal pe match karein.\n\nDone? Aage badhein ➡️";
+      return "➡️ Step 2: Ab details verify kariye\n\nRC ke hisaab se check karein:\n• Make & Model sahi hai?\n• Fuel type match karta hai?\n• Registration date sahi hai?\n\n⚠️ Koi bhi mismatch = galat quotation!\n\nDone? Aage badhein ➡️";
     case 2:
-      return `🔧 Step 3: Variant/Model Check\n\nVehicle ka exact variant select karein:\n• RC mein 'Model' ya 'Vehicle Description' dekhen\n• Variant bilkul match hona chahiye (e.g., 'LXI', 'VXI', 'ZXI')\n\n⚠️ Wrong variant = wrong premium + claim reject ho sakta hai!\n✅ If confused — RC pe clearly mention hota hai exact variant\n\nConfirm karein aur 'Done' bolein ➡️`;
-    case 3: {
-      const rcUploaded =
-        activeLead?.docsUploaded?.rcFront && activeLead?.docsUploaded?.rcBack;
-      const rcWarning =
-        activeLead && !rcUploaded
-          ? "\n⚠️ Warning: RC copy upload nahi hui! Pehle App mein RC upload karein."
-          : activeLead && rcUploaded
-            ? "\n✅ RC documents uploaded hain — carefully verify karein."
-            : "";
-
-      return `📄 Step 4: RC Match Verification${rcWarning}\n\nSab details RC ke saath match karein:\n✅ Owner name exactly same hona chahiye\n✅ Registration date sahi ho\n✅ Vehicle class match kare (LMV, MCWG etc.)\n✅ Engine number match kare\n✅ Chassis number match kare\n\n⚠️ Koi bhi mismatch = policy rejection ya claim issue!\n\nSab sahi? 'Done' bolein ➡️`;
-    }
+      return "➡️ Step 3: Ab quotation nikaalte hain\n\nSaari details confirm karne ke baad quotation generate karein.\n\n• Compare karo IDV amount\n• Add-ons check karo (Zero Dep, Engine Protection)\n• Premium amount note karo\n\nQuotation aa gaya? 'Done' bolein ➡️";
+    case 3:
+      return "➡️ Step 4: Ab best plan select kariye\n\nHighest payout wala plan choose karo:\n✅ Maximum IDV\n✅ Zero Depreciation\n✅ Engine Protection\n\nCustomer ki budget ke hisaab se best plan select karein.\n\nSelected? 'Done' bolein ➡️";
     case 4:
-      return `💰 Step 5: Quotation Generation\n\nAb quotes generate karein:\n✅ Sabhi plan options check karein\n✅ Zero Depreciation add-on zaroor dekhen\n✅ Highest IDV wala plan prefer karein\n✅ Engine Protection + RSA add-on recommend karein\n\n⭐ Best Payout: Max IDV + Zero Dep + Engine Protection + RSA\n\nQuote aa gaya? Screenshot lo aur 'Done' bolein ➡️`;
+      return "➡️ Step 5: Ab payment link generate karein\n\n1. Portal pe payment link generate karo\n2. App mein lead pe paste karo\n3. Customer ko WhatsApp se bhejo\n\nMessage: 'Aapka insurance ready hai. Payment link: [link]'\n\nBhej diya? 'Done' bolein ➡️";
     default:
-      return `🎉 PB Portal Steps Complete!\n\nAb next steps:\n1. Quotation screenshot save karein\n2. App mein lead pe document upload karein\n3. Customer ko WhatsApp pe share karein\n\nCustomer ne agree kiya? 'Customer agree' bolein ➡️`;
+      return "🎉 Congratulations! Saare steps complete ho gaye!\n\nAb:\n1. Lead status update karo\n2. Policy document save karo\n3. Customer ko confirm karo\n\nKoi aur madad chahiye? 😊";
   }
 }
 
@@ -636,7 +622,12 @@ function usePriyaVoice(onSpeakStart?: () => void, onSpeakEnd?: () => void) {
         onSpeakEnd?.();
         onEnd?.();
       };
-      window.speechSynthesis.speak(u);
+      try {
+        window.speechSynthesis.speak(u);
+      } catch (_e) {
+        onSpeakEnd?.();
+        onEnd?.();
+      }
     },
     [voiceEnabled, onSpeakStart, onSpeakEnd],
   );
@@ -1122,7 +1113,7 @@ export default function PriyaAssistant({
   onExternalOpenChange,
   inline = false,
 }: PriyaAssistantProps) {
-  const { leads } = useApp();
+  const { leads, pbPortalOpen, setPbPortalOpen } = useApp();
   const [open, setOpen] = useState(false);
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
 
@@ -1219,6 +1210,49 @@ export default function PriyaAssistant({
       scrollToBottom();
     }
   }, [messages, isActive, scrollToBottom]);
+
+  // ── PB Portal auto-open + greeting ─────────────────────────────────────────
+  useEffect(() => {
+    if (!pbPortalOpen) return;
+    // Reset the one-shot trigger immediately
+    setPbPortalOpen(false);
+    // Auto-open the floating panel
+    setOpen(true);
+    // Set workflow to PB portal phase
+    setPriyaWorkflow({ phase: "pb_portal", pbPortalStep: 0, activeLead: null });
+    // Show and speak PB portal greeting
+    const portalGreeting =
+      "Hello 👋 Main Priya hoon, main aapki madad karungi step-by-step policy banane mein";
+    const greetingMsg: ChatMessage = {
+      id: `pb-portal-greeting-${Date.now()}`,
+      text: portalGreeting,
+      sender: "bot",
+      time: formatTime(new Date()),
+    };
+    setMessages([greetingMsg]);
+    setGreeted(true);
+    scrollToBottom();
+    setTimeout(() => {
+      try {
+        speak(portalGreeting);
+      } catch {}
+      // After greeting, immediately show Step 1
+      setTimeout(() => {
+        const step1Text = "Sabse pehle vehicle number enter kariye";
+        const step1Msg: ChatMessage = {
+          id: `pb-step1-${Date.now()}`,
+          text: `➡️ Step 1: ${step1Text}`,
+          sender: "bot",
+          time: formatTime(new Date()),
+        };
+        setMessages((prev) => [...prev, step1Msg]);
+        scrollToBottom();
+        try {
+          speak(step1Text);
+        } catch {}
+      }, 3000);
+    }, 500);
+  }, [pbPortalOpen, setPbPortalOpen, speak, scrollToBottom]);
 
   const processUserMessage = useCallback(
     async (text: string) => {

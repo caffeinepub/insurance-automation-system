@@ -337,6 +337,8 @@ interface AppContextType {
     name?: string;
     error?: string;
   };
+  pbPortalOpen: boolean;
+  setPbPortalOpen: (v: boolean) => void;
   toasts: ToastMessage[];
   addToast: (type: ToastMessage["type"], message: string) => void;
   removeToast: (id: string) => void;
@@ -348,6 +350,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [currentUser, setCurrentUser] = useState<AppUser | null>(null);
   const [leads, setLeads] = useState<Lead[]>(SEED_LEADS);
   const [agentList, setAgentList] = useState<AppUser[]>(AGENTS);
+  const [pbPortalOpen, setPbPortalOpen] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = useCallback(
@@ -488,6 +491,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         addAgent,
         removeAgent,
         createLeadFromMessage,
+        pbPortalOpen,
+        setPbPortalOpen,
         toasts,
         addToast,
         removeToast,

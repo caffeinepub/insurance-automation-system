@@ -408,7 +408,7 @@ export default function LeadDetailPage({
   leadId,
   onBack,
 }: LeadDetailPageProps) {
-  const { leads, updateLead, currentUser } = useApp();
+  const { leads, updateLead, currentUser, setPbPortalOpen } = useApp();
   const lead = leads.find((l) => l.id === leadId);
 
   const initializedIdRef = useRef<string | null>(null);
@@ -1126,6 +1126,7 @@ export default function LeadDetailPage({
               rel="noopener noreferrer"
               data-ocid="lead.detail.pb_portal.button"
               className="flex items-center justify-center gap-2 w-full h-11 px-4 rounded-xl text-sm font-bold transition-all"
+              onClick={() => setPbPortalOpen(true)}
               style={{
                 background: "rgba(59,130,246,0.15)",
                 border: "1.5px solid rgba(59,130,246,0.35)",

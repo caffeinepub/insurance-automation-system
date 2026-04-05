@@ -45,7 +45,7 @@ const glassCard: React.CSSProperties = {
 };
 
 export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
-  const { currentUser, leads, logout } = useApp();
+  const { currentUser, leads, logout, setPbPortalOpen } = useApp();
   const [currentPage, setCurrentPage] = useState<Page>("dashboard");
   const [view, setView] = useState<DashboardView>("list");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
@@ -419,6 +419,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                 background: "linear-gradient(135deg, #3b82f6, #8b5cf6)",
               }}
               data-ocid="header.pb_portal.button"
+              onClick={() => setPbPortalOpen(true)}
             >
               <ExternalLink className="w-3.5 h-3.5" />
               PB Portal
@@ -491,6 +492,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                       boxShadow: "0 0 15px rgba(99,102,241,0.35)",
                     }}
                     data-ocid="header.pb_portal.button"
+                    onClick={() => setPbPortalOpen(true)}
                   >
                     <ExternalLink className="w-4 h-4" />
                     Open PB Portal

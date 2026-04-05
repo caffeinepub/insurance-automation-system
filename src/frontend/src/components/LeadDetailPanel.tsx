@@ -95,7 +95,8 @@ export default function LeadDetailPanel({
   isOpen,
   onClose,
 }: LeadDetailPanelProps) {
-  const { updateLead, addToast, leads, currentUser } = useApp();
+  const { updateLead, addToast, leads, currentUser, setPbPortalOpen } =
+    useApp();
 
   const liveLead = lead ? (leads.find((l) => l.id === lead.id) ?? lead) : null;
 
@@ -501,6 +502,7 @@ export default function LeadDetailPanel({
             rel="noopener noreferrer"
             data-ocid="lead.detail.pb_portal.button"
             className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors shadow-sm"
+            onClick={() => setPbPortalOpen(true)}
           >
             <ExternalLink className="w-4 h-4" />
             Open PB Portal

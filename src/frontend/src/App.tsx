@@ -112,6 +112,7 @@ function AppInner() {
     return (
       <>
         <AdminControlPanel onBack={() => setView("main")} />
+        {currentUser && <PriyaAssistant />}
         <Toaster position="bottom-right" richColors />
         <UpdateNotificationBanner />
         <InstallAppBanner />
