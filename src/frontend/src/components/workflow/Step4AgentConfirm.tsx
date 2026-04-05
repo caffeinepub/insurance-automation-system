@@ -55,7 +55,7 @@ export default function Step4AgentConfirm({ lead, onNext }: Props) {
               [
                 "Quote Amount",
                 lead.quoteAmount > 0
-                  ? `\u20b9${lead.quoteAmount.toLocaleString("en-IN")}`
+                  ? `₹${lead.quoteAmount.toLocaleString("en-IN")}`
                   : "Not set",
               ],
               ["RC Status", lead.rcStatus],

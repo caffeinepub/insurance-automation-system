@@ -32,7 +32,7 @@ export default function Step3Quotation({ lead, onNext }: Props) {
       currentStep: Math.max(lead.currentStep, 4),
     });
     toast.success(
-      `Quote of \u20b9${amount.toLocaleString("en-IN")} marked as ready!`,
+      `Quote of ₹${amount.toLocaleString("en-IN")} marked as ready!`,
     );
     onNext();
   };

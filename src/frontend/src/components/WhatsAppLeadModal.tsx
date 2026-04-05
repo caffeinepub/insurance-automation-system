@@ -8,6 +8,7 @@ import {
   Phone,
   Shield,
   ShieldAlert,
+  User,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -17,6 +18,22 @@ interface WhatsAppLeadModalProps {
   isAdmin: boolean;
   onClose: () => void;
   onLeadCreated: (leadId: string) => void;
+}
+
+/** Extract customer name from a WhatsApp message using common patterns */
+function extractNameFromMessage(message: string): string {
+  const namePatterns = [
+    /(?:my name is|I am|naam hai|mera naam)\s+([A-Za-z\s]{2,30})/i,
+    /(?:name:|name -|Name:|naam:)\s*([A-Za-z\s]{2,30})/i,
+    /(?:hi,?\s+I[' ]?m|hello,?\s+I[' ]?m)\s+([A-Za-z\s]{2,30})/i,
+  ];
+  for (const pattern of namePatterns) {
+    const match = message.match(pattern);
+    if (match) {
+      return match[1].trim().replace(/\s+/g, " ");
+    }
+  }
+  return "";
 }
 
 export default function WhatsAppLeadModal({
@@ -29,6 +46,7 @@ export default function WhatsAppLeadModal({
   const [selectedAgent, setSelectedAgent] = useState(AGENTS[0]?.email ?? "");
   const [parseResult, setParseResult] = useState<{
     mobile?: string;
+    name?: string;
     isInsurance?: boolean;
     error?: string;
     parsed: boolean;
@@ -41,8 +59,10 @@ export default function WhatsAppLeadModal({
     const insuranceKeywords =
       /insurance|policy|rc|vehicle|car|bike|renew|motor/i;
     const isInsurance = insuranceKeywords.test(message);
+    const extractedName = extractNameFromMessage(message);
     setParseResult({
       mobile: mobileMatch ? mobileMatch[0] : undefined,
+      name: extractedName || undefined,
       isInsurance,
       error: !mobileMatch
         ? "No 10-digit Indian mobile number found"
@@ -57,12 +77,19 @@ export default function WhatsAppLeadModal({
     try {
       const newId = addLeadFull({
         mobileNumber: parseResult.mobile,
+        name: parseResult.name ?? "",
         assignedAgent: isAdmin
           ? selectedAgent
           : (AGENTS[0]?.email ?? "agent1@insurance.com"),
-        name: "",
       });
-      addToast("success", `Lead created for ${parseResult.mobile}`);
+      addToast(
+        "success",
+        `Lead created for ${
+          parseResult.name
+            ? `${parseResult.name} (${parseResult.mobile})`
+            : parseResult.mobile
+        }`,
+      );
       onLeadCreated(newId);
     } catch {
       addToast("error", "Failed to create lead");
@@ -182,7 +209,9 @@ export default function WhatsAppLeadModal({
                   }`}
                 >
                   <Phone
-                    className={`w-4 h-4 ${parseResult.mobile ? "text-green-600" : "text-red-500"}`}
+                    className={`w-4 h-4 ${
+                      parseResult.mobile ? "text-green-600" : "text-red-500"
+                    }`}
                   />
                 </div>
                 <div>
@@ -198,6 +227,21 @@ export default function WhatsAppLeadModal({
                   )}
                 </div>
               </div>
+
+              {/* Customer Name (if extracted) */}
+              {parseResult.name && (
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <User className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Customer Name</p>
+                    <p className="text-sm font-bold text-gray-900">
+                      {parseResult.name}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Insurance detection */}
               <div className="flex items-center gap-3">

@@ -42,7 +42,7 @@ export default function Step8PaymentConfirm({ lead, onNext }: Props) {
             <p className="text-xs text-gray-400">Quote Amount</p>
             <p className="text-lg font-bold text-gray-900">
               {lead.quoteAmount > 0
-                ? `\u20b9${lead.quoteAmount.toLocaleString("en-IN")}`
+                ? `₹${lead.quoteAmount.toLocaleString("en-IN")}`
                 : "\u2014"}
             </p>
           </div>

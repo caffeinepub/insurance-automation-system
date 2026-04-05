@@ -136,14 +136,14 @@ export default function AdminControlPanel({ onBack }: AdminControlPanelProps) {
     },
     {
       label: "Total Business",
-      value: `\u20b9${businessStats.totalBusiness.toLocaleString("en-IN")}`,
+      value: `₹${businessStats.totalBusiness.toLocaleString("en-IN")}`,
       icon: DollarSign,
       color: "text-teal-600",
       bg: "bg-teal-50",
     },
     {
       label: "Total Commission",
-      value: `\u20b9${businessStats.totalCommission.toLocaleString("en-IN")}`,
+      value: `₹${businessStats.totalCommission.toLocaleString("en-IN")}`,
       icon: BarChart3,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
@@ -462,7 +462,7 @@ export default function AdminControlPanel({ onBack }: AdminControlPanelProps) {
                         </td>
                         <td className="px-5 py-3 text-right font-mono font-semibold text-gray-800">
                           {agent.business > 0 ? (
-                            `\u20b9${agent.business.toLocaleString("en-IN")}`
+                            `₹${agent.business.toLocaleString("en-IN")}`
                           ) : (
                             <span className="text-gray-300 font-normal">—</span>
                           )}

@@ -809,7 +809,7 @@ export default function LeadDetailPage({
                   htmlFor="detail-policy-amount"
                   className="text-sm font-semibold text-slate-200"
                 >
-                  Policy Amount (\u20b9)
+                  Policy Amount (₹)
                 </Label>
                 <Input
                   id="detail-policy-amount"
@@ -855,7 +855,7 @@ export default function LeadDetailPage({
                     Commission Amount
                   </span>
                   <span className="text-sm font-bold text-emerald-200">
-                    \u20b9
+                    ₹
                     {Math.round(
                       (policyAmount * commissionPercent) / 100,
                     ).toLocaleString("en-IN")}

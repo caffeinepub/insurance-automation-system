@@ -77,6 +77,7 @@
     @apply text-foreground;
     font-family: "Figtree", "Plus Jakarta Sans", ui-sans-serif, system-ui,
       sans-serif;
+    /* Removed background-attachment:fixed for mobile performance */
     background: linear-gradient(
       135deg,
       #0a0e1a 0%,
@@ -84,7 +85,7 @@
       #0f1535 60%,
       #0a0e1a 100%
     );
-    background-attachment: fixed;
+    background-attachment: scroll;
     min-height: 100vh;
   }
 
@@ -161,9 +162,10 @@
 }
 
 /* ── Glass card base ── */
+/* Reduced blur from 12px → 4px for better mobile performance */
 .glass-card {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -194,11 +196,39 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 textarea,
 select {
   color: #ffffff !important;
+  background-color: #1e1e2f !important;
   caret-color: #a78bfa !important;
 }
 input:not([type="checkbox"]):not([type="radio"]):not(
     [type="range"]
   )::placeholder,
 textarea::placeholder {
-  color: rgba(148, 163, 184, 0.8) !important;
+  color: rgba(148, 163, 184, 0.7) !important;
+}
+
+/* Override for light modal inputs (NewLeadFullForm uses white bg) */
+.light-input input,
+.light-input textarea,
+.light-input select,
+input.light,
+textarea.light {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+  caret-color: #2563eb !important;
+}
+
+/* NewLeadFullForm is white-bg — force dark text for those inputs */
+.bg-white input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.bg-white textarea,
+.bg-white select {
+  color: #111827 !important;
+  background-color: #f9fafb !important;
+  caret-color: #2563eb !important;
+}
+.bg-white
+  input:not([type="checkbox"]):not([type="radio"]):not(
+    [type="range"]
+  )::placeholder,
+.bg-white textarea::placeholder {
+  color: rgba(107, 114, 128, 0.8) !important;
 }

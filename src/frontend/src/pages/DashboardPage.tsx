@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { FormErrorBoundary } from "../App";
 import LeadCard from "../components/LeadCard";
 import LeadDetailPage from "../components/LeadDetailPage";
 import NewLeadFullForm from "../components/NewLeadFullForm";
@@ -24,6 +25,7 @@ import WhatsAppLeadModal from "../components/WhatsAppLeadModal";
 import { AGENTS, useApp } from "../context/AppContext";
 import type { Lead, WorkflowStatus } from "../types";
 import { WORKFLOW_STATUSES } from "../types";
+import { formatINR } from "../utils/formatCurrency";
 
 type Page = "dashboard" | "leads" | "reports" | "settings";
 type DashboardView = "list" | "detail";
@@ -36,8 +38,8 @@ interface DashboardPageProps {
 }
 
 const glassCard: React.CSSProperties = {
-  backdropFilter: "blur(6px)",
-  WebkitBackdropFilter: "blur(6px)",
+  backdropFilter: "blur(4px)",
+  WebkitBackdropFilter: "blur(4px)",
   background: "rgba(255,255,255,0.05)",
   border: "1px solid rgba(255,255,255,0.12)",
 };
@@ -245,7 +247,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
     (stats.completed / (stats.totalLeads || 1)) * 100,
   );
 
-  // Premium KPI cards (4 large cards)
+  // Premium KPI cards (4 large cards) — using formatINR for currency
   const kpiCards = [
     {
       label: "Total Leads",
@@ -256,16 +258,16 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
       accentColor: "rgba(59,130,246,0.3)",
     },
     {
-      label: "Business \u20b9",
-      value: `\u20b9${stats.totalBusiness.toLocaleString("en-IN")}`,
+      label: "Business ₹",
+      value: formatINR(stats.totalBusiness),
       icon: TrendingUp,
       gradientFrom: "#10b981",
       gradientTo: "#14b8a6",
       accentColor: "rgba(16,185,129,0.3)",
     },
     {
-      label: "Commission \u20b9",
-      value: `\u20b9${stats.totalCommission.toLocaleString("en-IN")}`,
+      label: "Commission ₹",
+      value: formatINR(stats.totalCommission),
       icon: Award,
       gradientFrom: "#8b5cf6",
       gradientTo: "#a855f7",
@@ -281,7 +283,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
     },
   ];
 
-  // Agent perf KPI cards
+  // Agent perf KPI cards — using formatINR for currency
   const perfKpiCards = [
     {
       label: "Leads Handled",
@@ -299,14 +301,14 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
     },
     {
       label: "Total Business",
-      value: `\u20b9${(agentPerfKpis?.totalBusiness ?? 0).toLocaleString("en-IN")}`,
+      value: formatINR(agentPerfKpis?.totalBusiness ?? 0),
       icon: TrendingUp,
       gradientFrom: "#8b5cf6",
       gradientTo: "#a855f7",
     },
     {
       label: "Commission Earned",
-      value: `\u20b9${(agentPerfKpis?.commissionEarned ?? 0).toLocaleString("en-IN")}`,
+      value: formatINR(agentPerfKpis?.commissionEarned ?? 0),
       icon: Award,
       gradientFrom: "#f97316",
       gradientTo: "#f59e0b",
@@ -361,8 +363,8 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
           className="md:hidden flex items-center justify-between px-4 py-3 flex-shrink-0"
           style={{
             background: "rgba(10,14,26,0.95)",
-            backdropFilter: "blur(6px)",
-            WebkitBackdropFilter: "blur(6px)",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
             borderBottom: "1px solid rgba(255,255,255,0.10)",
           }}
         >
@@ -456,11 +458,10 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
               <div className="hidden md:flex items-center justify-between">
                 <div>
                   <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-0.5">
-                    AI Insurance Trainer \ud83d\ude80
+                    AI Insurance Trainer 🚀
                   </p>
                   <h1 className="text-2xl font-black text-white">
-                    Welcome back! Priya is ready to help you close more deals
-                    \ud83d\udcb0
+                    Welcome back! Priya is ready to help you close more deals 💰
                   </h1>
                   <p className="text-sm text-slate-400 mt-0.5">
                     {isAdmin
@@ -510,7 +511,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
               {/* Mobile greeting */}
               <div className="md:hidden">
                 <h1 className="text-lg font-black text-white">
-                  Hi, {currentUser?.name?.split(" ")[0]}! \ud83d\udc4b
+                  Hi, {currentUser?.name?.split(" ")[0]}! 👋
                 </h1>
                 <p className="text-xs text-slate-400">
                   {isAdmin ? "All leads" : "Your leads"}
@@ -524,8 +525,8 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                     key={card.label}
                     className="rounded-2xl p-5 md:p-6 shadow-xl relative overflow-hidden"
                     style={{
-                      backdropFilter: "blur(6px)",
-                      WebkitBackdropFilter: "blur(6px)",
+                      backdropFilter: "blur(4px)",
+                      WebkitBackdropFilter: "blur(4px)",
                       background: "rgba(255,255,255,0.05)",
                       border: "1px solid rgba(255,255,255,0.13)",
                     }}
@@ -582,8 +583,8 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
               <div
                 className="rounded-2xl overflow-hidden shadow-xl"
                 style={{
-                  backdropFilter: "blur(6px)",
-                  WebkitBackdropFilter: "blur(6px)",
+                  backdropFilter: "blur(4px)",
+                  WebkitBackdropFilter: "blur(4px)",
                   background: "rgba(255,255,255,0.04)",
                   border: "1px solid rgba(255,255,255,0.11)",
                 }}
@@ -744,7 +745,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                             </td>
                             <td className="px-4 py-3 text-right font-mono font-semibold text-white">
                               {agent.totalBusiness > 0 ? (
-                                `\u20b9${agent.totalBusiness.toLocaleString("en-IN")}`
+                                formatINR(agent.totalBusiness)
                               ) : (
                                 <span className="text-slate-500">&mdash;</span>
                               )}
@@ -758,10 +759,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                                     border: "1px solid rgba(16,185,129,0.30)",
                                   }}
                                 >
-                                  \u20b9
-                                  {agent.commissionEarned.toLocaleString(
-                                    "en-IN",
-                                  )}
+                                  {formatINR(agent.commissionEarned)}
                                 </span>
                               ) : (
                                 <span className="text-slate-500">&mdash;</span>
@@ -796,10 +794,12 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-right font-mono font-bold text-white">
-                            \u20b9
-                            {agentBreakdown
-                              .reduce((s, a) => s + a.business, 0)
-                              .toLocaleString("en-IN")}
+                            {formatINR(
+                              agentBreakdown.reduce(
+                                (s, a) => s + a.business,
+                                0,
+                              ),
+                            )}
                           </td>
                           <td className="px-4 py-3 text-right">
                             <span
@@ -809,10 +809,12 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                                 border: "1px solid rgba(16,185,129,0.40)",
                               }}
                             >
-                              \u20b9
-                              {agentBreakdown
-                                .reduce((s, a) => s + a.commission, 0)
-                                .toLocaleString("en-IN")}
+                              {formatINR(
+                                agentBreakdown.reduce(
+                                  (s, a) => s + a.commission,
+                                  0,
+                                ),
+                              )}
                             </span>
                           </td>
                         </tr>
@@ -826,8 +828,8 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
               <div
                 className="rounded-2xl shadow-xl overflow-hidden"
                 style={{
-                  backdropFilter: "blur(6px)",
-                  WebkitBackdropFilter: "blur(6px)",
+                  backdropFilter: "blur(4px)",
+                  WebkitBackdropFilter: "blur(4px)",
                   background: "rgba(255,255,255,0.04)",
                   border: "1px solid rgba(255,255,255,0.11)",
                 }}
@@ -896,7 +898,7 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Search by name, mobile or email\u2026"
-                      className="w-full pl-9 pr-9 py-2 text-sm rounded-xl focus:outline-none text-white placeholder:text-slate-400 font-medium"
+                      className="w-full pl-9 pr-9 py-2 text-sm rounded-xl focus:outline-none font-medium"
                       style={{
                         background: "rgba(255,255,255,0.12)",
                         border: "1px solid rgba(139,92,246,0.35)",
@@ -1058,19 +1060,21 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
         </main>
       </div>
 
-      {/* New Lead Full Form */}
+      {/* New Lead Full Form — wrapped in FormErrorBoundary */}
       {showFullForm && (
-        <NewLeadFullForm
-          isAdmin={isAdmin}
-          defaultAgent={isAdmin ? AGENTS[0].email : currentUser?.email}
-          onSave={(id) => {
-            setShowFullForm(false);
-            setSelectedLeadId(id);
-            setView("detail");
-            setCurrentPage("leads");
-          }}
-          onCancel={() => setShowFullForm(false)}
-        />
+        <FormErrorBoundary>
+          <NewLeadFullForm
+            isAdmin={isAdmin}
+            defaultAgent={isAdmin ? AGENTS[0].email : currentUser?.email}
+            onSave={(id) => {
+              setShowFullForm(false);
+              setSelectedLeadId(id);
+              setView("detail");
+              setCurrentPage("leads");
+            }}
+            onCancel={() => setShowFullForm(false)}
+          />
+        </FormErrorBoundary>
       )}
 
       {/* WhatsApp Lead Modal */}

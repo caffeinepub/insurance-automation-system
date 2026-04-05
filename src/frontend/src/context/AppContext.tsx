@@ -45,6 +45,22 @@ export function getAgentByWhatsapp(
   return AGENTS.find((a) => a.whatsapp_number === whatsappNumber);
 }
 
+/** Extract customer name from a raw WhatsApp message */
+function extractNameFromMessage(message: string): string {
+  const namePatterns = [
+    /(?:my name is|I am|naam hai|mera naam)\s+([A-Za-z\s]{2,30})/i,
+    /(?:name:|name -|Name:|naam:)\s*([A-Za-z\s]{2,30})/i,
+    /(?:hi,?\s+I[' ]?m|hello,?\s+I[' ]?m)\s+([A-Za-z\s]{2,30})/i,
+  ];
+  for (const pattern of namePatterns) {
+    const match = message.match(pattern);
+    if (match) {
+      return match[1].trim().replace(/\s+/g, " ");
+    }
+  }
+  return "";
+}
+
 function generateMobile(): string {
   const prefixes = ["6", "7", "8", "9"];
   const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
@@ -318,6 +334,7 @@ interface AppContextType {
     success: boolean;
     leadId?: string;
     mobile?: string;
+    name?: string;
     error?: string;
   };
   toasts: ToastMessage[];
@@ -426,6 +443,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       success: boolean;
       leadId?: string;
       mobile?: string;
+      name?: string;
       error?: string;
     } => {
       // Extract 10-digit Indian mobile
@@ -443,12 +461,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           error: "Message doesn't appear to be insurance-related",
         };
 
+      // Try to extract customer name
+      const extractedName = extractNameFromMessage(message);
+
       const newId = addLeadFull({
         mobileNumber: mobile,
+        name: extractedName,
         assignedAgent: "agent1@insurance.com",
-        name: "",
       });
-      return { success: true, leadId: newId, mobile };
+      return { success: true, leadId: newId, mobile, name: extractedName };
     },
     [addLeadFull],
   );
