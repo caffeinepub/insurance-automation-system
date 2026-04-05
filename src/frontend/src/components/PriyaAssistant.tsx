@@ -130,6 +130,46 @@ const MOTOR_INSURANCE_KEYWORDS = [
   "tractor",
   "two wheeler",
   "four wheeler",
+  "private car",
+  "goods carrier",
+  "electric vehicle",
+  "ev",
+  "electric car",
+  "electric bike",
+  "ev insurance",
+  "taxi insurance",
+  "cab insurance",
+  "commercial vehicle",
+  "variant",
+  "fuel type",
+  "petrol",
+  "diesel",
+  "cng",
+  "lpg",
+  "hybrid",
+  "electric",
+  "registration date",
+  "reg date",
+  "make model",
+  "vehicle number",
+  "gaadi number",
+  "number plate",
+  "rc match",
+  "rc verify",
+  "rc details",
+  "vehicle detail",
+  "gaadi detail",
+  "private gaadi",
+  "goods vehicle",
+  "malvahak",
+  "yatri",
+  "taxi permit",
+  "lxi",
+  "vxi",
+  "zxi",
+  "rc verify",
+  "gcv",
+  "pcv",
   // Documents
   "rc",
   "registration",
@@ -413,6 +453,86 @@ function generateDynamicResponse(
     return buildOdReply(context);
   }
 
+  // --- Vehicle Types ---
+  if (/private car|private gaadi|personal car/i.test(lower)) {
+    return buildPrivateCarReply(context);
+  }
+  if (
+    /electric.?vehicle|\bev\b|electric car|electric bike|ev insurance|battery.*car|battery.*bike/i.test(
+      lower,
+    )
+  ) {
+    return buildEvReply(context);
+  }
+  if (/taxi|cab|ola|uber|taxi permit|pcv.*taxi|yellow board/i.test(lower)) {
+    return buildTaxiReply(context);
+  }
+  if (
+    /goods carrier|goods vehicle|malvahak|gcv|truck.*insurance|lorry|delivery van/i.test(
+      lower,
+    )
+  ) {
+    return buildGoodsCarrierReply(context);
+  }
+
+  // --- Vehicle Details Verification ---
+  if (
+    /vehicle number|gaadi.*number|number plate|registration number|reg.*number/i.test(
+      lower,
+    )
+  ) {
+    return buildVehicleNumberReply(context);
+  }
+  if (
+    /make.*model|brand.*model|gaadi.*brand|maruti|hyundai|honda|hero|bajaj|tata|mahindra|toyota/i.test(
+      lower,
+    )
+  ) {
+    return buildMakeModelReply(context);
+  }
+  if (
+    /variant|model variant|car variant|bike variant|lxi|vxi|zxi|vti|sti|top.*variant|base.*variant/i.test(
+      lower,
+    )
+  ) {
+    return buildVariantReply(context);
+  }
+  if (
+    /fuel type|petrol|diesel|\bcng\b|\blpg\b|hybrid.*fuel|fuel.*rc|fuel.*match/i.test(
+      lower,
+    )
+  ) {
+    return buildFuelTypeReply(context);
+  }
+  if (
+    /registration date|reg date|kab register|gaadi kab li|date of registration|purchase date/i.test(
+      lower,
+    )
+  ) {
+    return buildRegistrationDateReply(context);
+  }
+  if (
+    /rc.*match|rc.*verify|rc.*check|match.*rc|verify.*rc|rc mismatch|rc.*details|gaadi ka rc/i.test(
+      lower,
+    )
+  ) {
+    return buildRcVerificationReply(context);
+  }
+  if (
+    /vehicle detail|gaadi.*detail|vehicle guide|gaadi.*guide|vehicle info|gaadi.*info|vehicle check/i.test(
+      lower,
+    )
+  ) {
+    return buildVehicleDetailsGuideReply(context);
+  }
+  if (
+    /ncb.*claim|claim.*ncb|ncb.*history|claim history|kya claim kiya|pehle.*claim/i.test(
+      lower,
+    )
+  ) {
+    return buildNcbClaimHistoryReply(context);
+  }
+
   // --- Two-wheeler ---
   if (/two.?wheeler|bike insurance|motorcycle|scooter insurance/i.test(lower)) {
     return buildTwoWheelerReply(context);
@@ -692,12 +812,531 @@ function buildOdReply(_ctx: ConversationContext): string {
   return "OD (Own Damage) Insurance — aapki gaadi ki protection! 🚗\n\nOD cover karta hai:\n✅ Accident/collision damage\n✅ Fire, explosion\n✅ Theft (partial ya complete)\n✅ Natural calamities (flood, earthquake, cyclone)\n✅ Man-made calamities (riot, strike)\n\nOD optional hai par strongly recommended!\nTP (Third Party) mandatory hai by law — doosron ke liye cover.\n\nOD + TP = Comprehensive Policy\n\nOD premium IDV, gaadi ki age, aur add-ons pe depend karta hai. Generally OD premium zyada hota hai TP se. Smart choice: Hamesha comprehensive lein! 💪 Kuch aur?";
 }
 
+// ---- Vehicle Knowledge Module ----
+
+function buildPrivateCarReply(_ctx: ConversationContext): string {
+  return `🚗 Private Car Insurance — Complete Guide:
+
+Private car matlab personal use ke liye registered gaadi.
+
+📋 Policy Types available:
+✅ Comprehensive — OD + TP (best protection, recommended)
+✅ Third Party Only — minimum legal requirement
+✅ SAOD — own damage only (if TP already active)
+
+🔑 Key Vehicle Details to verify:
+1️⃣ Vehicle Number — RC pe exact match karein
+2️⃣ Make & Model — brand aur model name RC se
+3️⃣ Variant — LXI/VXI/ZXI exactly correct hona chahiye
+4️⃣ Fuel Type — Petrol/Diesel/CNG — RC se match karein
+5️⃣ Registration Date — policy calculation ke liye zaroori
+
+⚠️ Private car ko commercial use ke liye mat use karein — claim reject hoga!
+
+💡 Best add-ons for private car:
+Zero Dep + Engine Protection + RSA + NCB Protector
+
+Kuch specific poochna hai private car insurance ke baare mein? 😊`;
+}
+
+function buildEvReply(_ctx: ConversationContext): string {
+  return `⚡ Electric Vehicle (EV) Insurance — Special Guide:
+
+EV insurance regular car se thoda alag hota hai!
+
+🔋 EV ke liye special considerations:
+
+1. Battery Coverage:
+   ✅ Some insurers battery separately cover karte hain
+   ✅ Battery replacement cost bahut zyada hoti hai (₹2-5 lakh)
+   ✅ Always check — battery cover included hai ya excluded?
+
+2. Fuel Type — RC mein "ELECTRIC" likhna chahiye
+   ⚠️ "Petrol" ya "Diesel" likha hai aur EV hai — yeh mismatch hai!
+
+3. Charging equipment cover — check karein add-on available hai ya nahi
+
+4. IDV calculation:
+   ✅ Market value pe set karein
+   ✅ Battery value IDV mein include honi chahiye
+
+5. Popular EV insurers:
+   Tata AIG, Bajaj Allianz, ICICI Lombard — EV friendly policies offer karte hain
+
+📌 RC Verification for EV:
+   • Fuel type: ELECTRIC ✅
+   • Vehicle class: check karein
+   • Battery capacity (kWh) — note karein
+
+⚠️ Common mistake: EV ko petrol/diesel category mein quote karna — GALAT!
+
+EV insurance ke baare mein kuch aur jaanna hai? 😊`;
+}
+
+function buildTaxiReply(_ctx: ConversationContext): string {
+  return `🚖 Taxi / Cab Insurance — Commercial Vehicle Guide:
+
+Taxi insurance personal car se alag hoti hai!
+
+📋 Key Differences:
+
+1. Permit Type:
+   ✅ Yellow Board / Commercial Registration required
+   ✅ Taxi Permit (All India/State) — RC pe check karein
+   ⚠️ Private car se taxi chalana = claim rejection!
+
+2. Policy Type:
+   • PCV — Passenger Carrying Vehicle policy
+   • Higher premium than personal car (commercial risk)
+   • Passenger liability cover mandatory
+
+3. Vehicle Details to verify:
+   • Registration type: Commercial (not Private)
+   • Seating capacity — RC pe likha hoga
+   • Permit validity — expired permit = claim issue
+
+4. NCB for Taxi:
+   • Commercial vehicles ka NCB structure alag hota hai
+   • Annual renewal recommended
+
+5. Add-ons for Taxi:
+   ✅ Passenger Personal Accident cover
+   ✅ RSA (Roadside Assistance — drivers ke liye life saver)
+   ✅ Engine Protection
+
+⚠️ Always verify: RC mein "TAXI" ya "PCV" clearly mention ho!
+
+Agent tip: Taxi operators ke liye fleet insurance bhi option hota hai — multiple cabs ek policy mein! 💡
+
+Kuch aur? 😊`;
+}
+
+function buildGoodsCarrierReply(_ctx: ConversationContext): string {
+  return `🚛 Goods Carrier / Commercial Vehicle Insurance:
+
+Goods carrier matlab truck, lorry, delivery van, tempo — sab GCV (Goods Carrying Vehicle) category mein aate hain.
+
+📋 Important Points:
+
+1. Vehicle Registration:
+   ✅ RC mein "GOODS CARRIER" ya "LMV-TRANSPORT" hona chahiye
+   ✅ Route permit ya national permit check karein
+   ⚠️ Private use vehicle mein goods transport = claim rejection!
+
+2. Policy Features:
+   • GCV specific policy — regular car policy nahi chalegi
+   • Goods in transit cover available (separate endorsement)
+   • Driver PA cover included/optional
+
+3. Vehicle Details for GCV:
+   • Gross Vehicle Weight (GVW) — RC pe hota hai
+   • Payload capacity — insurance calculation mein important
+   • Vehicle age — older vehicles ka premium different
+
+4. NCB for Goods Carrier:
+   • Commercial vehicle NCB personal vehicle se alag hota hai
+   • Claim history carefully check karein
+
+5. Common add-ons:
+   ✅ Goods in Transit Insurance
+   ✅ Driver PA cover
+   ✅ RSA for long-distance routes
+
+⚠️ Yaad rakhein: GVW ke hisaab se policy underwriting hoti hai — galat GVW enter karna = claim problem!
+
+Goods carrier insurance ke baare mein aur kuch? 😊`;
+}
+
+function buildVehicleNumberReply(_ctx: ConversationContext): string {
+  return `🔢 Vehicle Number — Entry Guide:
+
+Vehicle number bahut carefully enter karna zaroori hai!
+
+📋 Format: MH12AB1234 (State Code + District + Series + Number)
+
+✅ How to verify:
+1. RC (Registration Certificate) pe exactly dekho
+2. Number plate se match karo (same hona chahiye)
+3. Portal mein enter karte waqt — ek ek character check karo
+
+⚠️ Common Mistakes to Avoid:
+• 0 (zero) aur O (letter O) confuse karna
+• 1 (one) aur I (letter I) confuse karna
+• Space ya hyphen wrong position
+• State code wrong (MH, DL, KA, etc.)
+
+🔍 RC se vehicle number verify karna kab zaroori hai:
+• Policy renewal mein
+• New policy issuance mein
+• Owner change endorsement mein
+• Claim filing mein
+
+💡 Agent Tip: Vehicle number galat hone se policy invalid ho sakti hai aur claim reject ho sakta hai! Hamesha RC dekhke enter karo.
+
+Koi doubt hai vehicle number ke baare mein? 😊`;
+}
+
+function buildMakeModelReply(_ctx: ConversationContext): string {
+  return `🏭 Make & Model Verification — Important Guide:
+
+Make = Brand (Maruti, Hyundai, Honda, Tata, etc.)
+Model = Specific car/bike name (Swift, i20, City, Nexon, etc.)
+
+📋 How to find on RC:
+RC mein "Maker's Name" aur "Model" field hota hai
+
+✅ Verification Steps:
+1. RC pe "Maker's Name" dekho — yeh hai Make
+2. "Model" field dekho — yeh hai exact model
+3. Portal mein exactly same select karo
+
+⚠️ Common Confusions:
+• Maruti vs Maruti Suzuki — same hai, par portal mein jo option hai woh select karo
+• Tata Motors vs TATA — same company
+• Model: "Swift" vs "Swift Dzire" — ALAG models hain! Carefully select karein
+
+🔍 Why it matters:
+Wrong make/model = wrong premium calculation
+= Claim dispute ho sakta hai!
+
+📌 Special cases:
+• Imported cars — exact model name zaroori
+• New models — recent databases mein update hota hai
+• CKD models — dealer se exact RC details confirm karein
+
+Agent tip: Agar model portal mein nahi milta toh insurer ke helpline se confirm karein. "Other/Miscellaneous" select karna last resort hai! 💡
+
+Kuch aur? 😊`;
+}
+
+function buildVariantReply(_ctx: ConversationContext): string {
+  return `🎯 Variant Verification — BAHUT ZAROORI!
+
+Variant sahi hona bahut zaruri hai! ⚠️
+
+📋 Variant kya hota hai?
+Same model ke alag-alag versions:
+• Maruti Swift: LXI → VXI → ZXI → ZXI+
+• Hyundai i20: Magna → Sportz → Asta → N Line
+• Honda Activa: Standard → DLX → Premium
+
+✅ Variant kahan milta hai RC pe:
+RC mein "Body Type" ya "Vehicle Description" section mein often likhta hai.
+Agar RC mein nahi hai — dealer invoice se confirm karein.
+
+⚠️ Why variant accuracy matters:
+1. Different variants ka IDV ALAG hota hai
+   (Top variant IDV = ₹8L vs Base variant IDV = ₹6L)
+2. Wrong variant = wrong IDV = claim mein loss ya extra premium
+3. Insurer dispute raise kar sakta hai
+
+🔍 Variant identify karne ke tips:
+• RC pe "Ex-Showroom Price" dekho — variant idea milta hai
+• Chassis number se dealer verify kar sakta hai
+• Insurance history se bhi pata chalta hai
+• Physical inspection — features dekho (alloy wheels, sunroof, etc.)
+
+⚠️ Common agent mistake:
+Base variant select karna cost save ke liye — BILKUL MAT KARO!
+Claim time pe actual variant vs insured variant mismatch = partial payment ya rejection!
+
+💡 Priya's tip: "Variant sahi nahi hai toh poori policy galat hai. Ek baar RC aur invoice dono dekho!" 🎯
+
+Kuch specific variant confusion hai? 😊`;
+}
+
+function buildFuelTypeReply(_ctx: ConversationContext): string {
+  return `⛽ Fuel Type Verification — RC se Match Karna Zaroori!
+
+Fuel RC se match hona chahiye! ⚠️
+
+📋 Fuel Types:
+• Petrol — most common
+• Diesel — heavy vehicles, SUVs
+• CNG (Compressed Natural Gas) — retrofitted ya factory fitted
+• LPG — less common, some older vehicles
+• Electric — EV vehicles
+• Hybrid — Petrol + Electric (Toyota, Honda)
+
+✅ Fuel Type kahan check karein:
+RC pe "Fuel Used" column mein clearly likha hota hai!
+
+⚠️ IMPORTANT — CNG Special Case:
+1. Factory-fitted CNG vs Retrofitted CNG:
+   • Factory CNG: RC mein "CNG" likha hoga ✅
+   • Retrofitted CNG: RC mein "Petrol" likha ho sakta hai
+
+2. Retrofitted CNG insurance rule:
+   • CNG kit ke liye RTO endorsement zaroori hai
+   • RC mein endorsement nahi = claim reject ho sakta hai
+   • CNG endorsement check karein RC pe!
+
+3. CNG ke liye additional loading:
+   • Insurers ₹50-200 extra CNG loading charge karte hain
+   • Yeh alag se mention hona chahiye policy mein
+
+💡 Fuel mismatch example:
+RC mein "Petrol" aur portal mein "Diesel" select kiya → Policy invalid!
+RC mein "Petrol" aur gaadi pe CNG kit lagi hai (without endorsement) → Claim risk!
+
+🔍 Priya's fuel type checklist:
+1. RC dekho → "Fuel Used" column
+2. Portal mein exactly same select karo
+3. CNG hai toh RC endorsement confirm karo
+4. EV hai toh "ELECTRIC" check karo
+
+Koi fuel type confusion hai? 😊`;
+}
+
+function buildRegistrationDateReply(_ctx: ConversationContext): string {
+  return `📅 Registration Date — Policy Calculation mein Bahut Important!
+
+Registration date policy mein kyun zaroori hai? Policy calculation me important hai! ⚠️
+
+📋 Registration Date affects:
+
+1. IDV Calculation:
+   • IDV = Ex-showroom price × (1 - depreciation%)
+   • Gaadi jitni purani, depreciation utni zyada, IDV utna kam
+   • Depreciation schedule (IRDAI standard):
+     - 0-6 months: 5%
+     - 6m-1 year: 15%
+     - 1-2 years: 20%
+     - 2-3 years: 30%
+     - 3-4 years: 40%
+     - 4-5 years: 50%
+
+2. NCB Calculation:
+   • NCB registration date se count nahi hota — policy start date se
+   • But registration date se gaadi ki age calculate hoti hai
+
+3. Policy Type Eligibility:
+   • 0-3 year car: Comprehensive highly recommended
+   • 3-7 year car: Comprehensive still good
+   • 7+ year car: TP-only option consider kar sakte hain
+
+4. New car (just registered):
+   • Dealer se exact registration date maango
+   • RC typically 30-60 days mein aata hai — temporary number pe bhi policy ho sakti hai
+
+⚠️ Common mistake:
+Purchase date ≠ Registration date. Manufacturing year ≠ Registration date.
+RC pe "Date of Registration" column dekho — WAHI sahi date hai!
+
+💡 Agent tip: Agar customer registration date bata raha hai but RC nahi dikha raha — RC copy le lo pehle, tabhi policy bano! 🎯
+
+Aur kuch? 😊`;
+}
+
+function buildRcVerificationReply(_ctx: ConversationContext): string {
+  return `📄 RC Verification — Step-by-Step Guide:
+
+RC (Registration Certificate) ko hamesha verify karo before policy! ✅
+
+📋 RC mein kya-kya check karein:
+
+1. 🔢 Vehicle Number (Registration Number)
+   → Portal mein exactly same enter karein
+
+2. 🏭 Make & Model
+   → "Maker's Name" aur "Model" match karein
+
+3. 🎯 Variant
+   → "Vehicle Description" ya body type check karein
+
+4. ⛽ Fuel Type
+   → "Fuel Used" column — Petrol/Diesel/CNG/Electric
+
+5. 📅 Registration Date
+   → "Date of Registration" — exact date note karein
+
+6. 👤 Owner Name
+   → Policy mein same name hona chahiye
+   → Owner change? Endorsement ya new policy required
+
+7. 🏠 Address
+   → State-based TP rates hote hain — address important hai
+
+8. 🔧 Engine & Chassis Number
+   → Proposal form mein bharne ke liye
+
+⚠️ Mismatch warning signs:
+• RC pe "Petrol" aur gaadi pe CNG — RC endorsement check karo
+• RC pe owner name aur customer name alag — transfer hue hai kya?
+• RC pe variant aur quote ka variant alag — reconfirm karein
+
+🔴 If RC not available:
+• Hypothetically insurance ho sakti hai
+• BUT claim time pe RC mandatory hoti hai
+• Agent tip: RC copy zaroor lo, dono sides (front + back)
+
+💡 RC verification process:
+Step 1: RC front photo lo → Registration No., Owner, Date check
+Step 2: RC back photo lo → Engine No., Chassis No., Fuel, Hypothecation check
+Step 3: Portal mein RC se copy-paste / manually match karein
+Step 4: Koi mismatch milne pe customer ko immediately bataao
+
+"RC se sab match hai toh aage badhein!" ✅
+
+Kuch specific RC field ke baare mein doubt hai? 😊`;
+}
+
+function buildVehicleDetailsGuideReply(_ctx: ConversationContext): string {
+  return `🚗 Complete Vehicle Details Guide — Step by Step:
+
+Main aapko vehicle details correctly fill karne mein guide karungi! 😊
+
+📋 Step-by-Step Vehicle Details Check:
+
+STEP 1 — Vehicle Number ✅
+→ RC pe registration number dekho
+→ Portal mein exactly same enter karo
+→ 0 aur O, 1 aur I confuse mat karo
+
+STEP 2 — Make & Model ✅
+→ RC: "Maker's Name" + "Model" column
+→ Portal mein exact same select karo
+
+STEP 3 — Variant ⚠️ CRITICAL
+→ RC ya invoice se confirm karo
+→ Variant sahi hona bahut zaruri hai!
+→ LXI/VXI/ZXI alag hote hain — carefully choose
+
+STEP 4 — Fuel Type ✅
+→ RC pe "Fuel Used" column dekho
+→ CNG hai toh RC endorsement check karo
+
+STEP 5 — Registration Date ✅
+→ RC pe "Date of Registration" exact date
+→ IDV calculation ke liye important hai
+
+STEP 6 — Owner Name ✅
+→ RC mein exactly same name → Policy mein same hona chahiye
+
+STEP 7 — NCB History ✅
+→ Customer se poochho: "Pichle saal koi claim kiya tha?"
+→ Sahi NCB % apply karo
+
+✅ Final Check: "Kya sab details RC se match kar liye?"
+
+⚠️ Yeh details galat ho toh:
+• Policy invalid ho sakti hai
+• Claim reject ho sakta hai
+• Premium galat charge ho sakta hai
+
+Koi specific step mein help chahiye? 😊`;
+}
+
+function buildNcbClaimHistoryReply(_ctx: ConversationContext): string {
+  return `📊 NCB & Claim History — Correct NCB Calculate Karo:
+
+NCB sahi hona bahut zaroori hai! Galat NCB declare karna fraud maana jaata hai! ⚠️
+
+📋 NCB Slab Table:
+┌─────────────────────────────┬──────────┐
+│ Claim-Free Policy Years     │ NCB %    │
+├─────────────────────────────┼──────────┤
+│ 1st renewal (0 claims)      │ 20%      │
+│ 2nd renewal (0 claims)      │ 25%      │
+│ 3rd renewal (0 claims)      │ 35%      │
+│ 4th renewal (0 claims)      │ 45%      │
+│ 5th+ renewal (0 claims)     │ 50%      │
+│ Any claim made              │ 0% (reset)│
+└─────────────────────────────┴──────────┘
+
+🔍 How to verify claim history — poochho customer se:
+
+Question 1: "Kya pichle saal (ya pichle kaafi saalon mein) koi claim kiya tha?"
+Question 2: "Agar haan — kitne saal pehle aur claim amount kya tha?"
+Question 3: "Kya aapke paas purani policy ka renewal certificate hai?"
+
+✅ NCB Determine kaise karein:
+• 0 claims, 1 year policy: 20%
+• 0 claims, 3 years: 35%
+• Claim kiya 2 years pehle, uske baad 1 clean year: 20%
+• Claim kiya is saal: 0%
+
+⚠️ NCB Protector add-on:
+Agar customer ka NCB 35%+ hai toh NCB Protector suggest karo!
+Ek claim ke baad bhi NCB safe rahega.
+
+📌 Special cases:
+• New car = No NCB (0%)
+• Old car but no history = Ask for last policy copy
+• Lost policy? Purani company se NCB certificate maango
+
+💡 Agent tip: "NCB transfer ke liye purani insurance company se certificate lo — 90 din mein valid hota hai!"
+
+NCB ke baare mein kuch aur jaanna hai? 😊`;
+}
+
 function buildTwoWheelerReply(_ctx: ConversationContext): string {
-  return "Two-Wheeler Insurance — bike/scooter ke liye! 🏍️\n\nKey points:\n✅ New bikes ke liye: TP 5 saal compulsory (2019 से नियम)\n✅ OD annual renewal karein\n✅ Documents: RC, DL, Aadhaar/PAN\n✅ Add-ons available: Zero Dep, RSA, Engine Protection\n\nTip: Bike insurance often neglect hota hai! Par accident pe sirf TP hone se aapki bike ka repair cover nahi hoga.\n\nRider Personal Accident Cover: ₹15 lakh cover ke liye sirf ~₹100-200/year! Must-have for all bike owners.\n\nAgent tip: Bike renewal customers ko comprehensive convert karo — bahut easy conversion hai! 💪 Kuch aur?";
+  return `🏍️ Two-Wheeler Insurance — Bike/Scooter Guide:
+
+📋 Vehicle Details to verify for Two-Wheeler:
+1. 🔢 Vehicle Number — RC pe exact match
+2. 🏭 Make & Model — Hero/Honda/Bajaj/TVS + exact model
+3. 🎯 Variant — Standard/DLX/Premium/Special Edition
+4. ⛽ Fuel Type — Petrol ya Electric (for e-bikes)
+5. 📅 Registration Date — important for IDV
+
+⚠️ Important Rules:
+✅ New bikes (post 2019): TP 5 saal compulsory (IRDAI rule)
+✅ OD annual renewal karo
+✅ Rider PA Cover: ₹15 lakh — sirf ~₹100-200/year!
+
+🔍 RC Verification for Bike:
+• RC pe "Two Wheeler" ya "Motorcycle/Scooter" class hona chahiye
+• Fuel type: Petrol ya ELECTRIC — match karo
+• Owner name: Policy mein same
+
+💡 Common two-wheeler mistakes:
+• Scooter ko motorcycle select karna (alag category)
+• Electric bike ko petrol mein quote karna — GALAT!
+• Variant skip karna — top model ka IDV alag hota hai
+
+Add-ons for bike: Zero Dep, RSA, Engine Protection
+E-bike ke liye: Battery cover add-on check karo!
+
+Agent tip: Bike insurance often neglect hota hai — comprehensive push karo! 💪
+
+Kuch aur? 😊`;
 }
 
 function buildCommercialReply(_ctx: ConversationContext): string {
-  return "Commercial Vehicle Insurance — trucks, buses, taxis ke liye! 🚚\n\nPersonal vs Commercial policy alag hoti hai:\n• Higher premium (commercial use = more risk)\n• Different TP limits\n• GCV (Goods Carrying Vehicle) aur PCV (Passenger Carrying Vehicle) alag policies\n• Commercial use pe personal policy — claim rejected!\n\nGCV (Trucks, lorries, vans): Route permit, goods declaration important.\nPCV (Bus, taxi, auto): Passenger liability cover zaroori.\n\nAgent tip: Commercial vehicle ke liye specialist insurer se quote maango — better rates aur coverage milti hai! Koi specific vehicle type ke baare mein? 💡";
+  return `🚚 Commercial Vehicle Insurance — Professional Guide:
+
+Commercial vehicle = business use ke liye registered gaadi.
+
+📋 Commercial Vehicle Types:
+• GCV — Goods Carrying Vehicle (trucks, lorries, vans, tempo)
+• PCV — Passenger Carrying Vehicle (buses, taxis, autos)
+• Miscellaneous — tractors, cranes, etc.
+
+🔍 RC Verification for Commercial Vehicle:
+1. Registration type: "TRANSPORT" or "COMMERCIAL" hona chahiye
+2. Permit: Route permit / All India permit — check validity
+3. Seating capacity (PCV) ya GVW (GCV) — RC pe note karo
+4. Fuel type: Diesel mostly, CNG bhi common
+
+⚠️ Critical Rule:
+Personal car pe commercial use = CLAIM REJECTION!
+Commercial vehicle pe personal policy = CLAIM REJECTION!
+
+📊 Vehicle Details for Commercial:
+• Make & Model: RC se exactly
+• Body type: Truck/Bus/Taxi/Auto etc.
+• Gross Vehicle Weight — IDV calculation mein important
+• Year of manufacture — depreciation ke liye
+
+💡 Policy Types:
+• GCV: Goods carrying vehicle specific policy
+• PCV: Passenger vehicle policy with liability cover
+• Both need: Driver PA cover (mandatory)
+
+Agent tip: Commercial vehicle ke liye IRDA-approved commercial specialist insurers prefer karein — better rates aur faster claims! 💪
+
+Koi specific commercial vehicle type ke baare mein? 😊`;
 }
 
 function buildPbPortalReply(ctx: ConversationContext): string {
@@ -800,7 +1439,35 @@ function buildStatusReply(_ctx: ConversationContext): string {
 }
 
 function buildHelpReply(): string {
-  return "Main Priya hoon — aapki Professional Motor Insurance AI Advisor! 🌟\n\nMain in topics pe help kar sakti hoon:\n\n🔵 Insurance Concepts: NCB, IDV, Premium, Claim, Zero Dep, Add-ons, PA Cover\n🟢 Policy Types: Comprehensive, Third Party, SAOD, Bundled, Long-term\n🟡 Workflow: App Dashboard, PB Portal steps, Proposal, Quotation, Payment\n🟠 Documents & KYC: Checklist, IRDAI KYC rules, RC verification\n🔴 IRDA Rules: KYC compliance, Mandatory docs, Grievance, Ombudsman\n🟣 Market Knowledge: Company comparison, CSR, Best plan suggestion\n⚪ Agent Tools: Follow-up tips, Lead management, Conversion strategies\n🎓 Training Mode: Step-by-step learning on any insurance topic\n\nBas poochho — koi bhi motor insurance sawaal! Hindi, English, ya Marathi mein. Main hoon na! 💪\n\nQuick topics:\n• 'IRDA rules' → Compliance guide\n• 'Company compare' → CSR + network comparison\n• 'Best plan' → Profiling-based suggestion\n• 'PA Cover' → Mandatory PA rules\n• 'Policy types' → All policy types explained\n• 'Proposal step' → PB Portal proposal guide\n\nKya jaanna hai? 😊";
+  return `Main Priya hoon — aapki Professional Motor Insurance AI Advisor! 🌟
+
+Main in topics pe help kar sakti hoon:
+
+🔵 Insurance Concepts: NCB, IDV, Premium, Claim, Zero Dep, Add-ons, PA Cover
+🟢 Policy Types: Comprehensive, Third Party, SAOD, Bundled, Long-term
+🟡 Workflow: App Dashboard, PB Portal steps, Proposal, Quotation, Payment
+🟠 Documents & KYC: Checklist, IRDAI KYC rules, RC verification
+🔴 IRDA Rules: KYC compliance, Mandatory docs, Grievance, Ombudsman
+🟣 Market Knowledge: Company comparison, CSR, Best plan suggestion
+⚪ Agent Tools: Follow-up tips, Lead management, Conversion strategies
+🎓 Training Mode: Step-by-step learning on any insurance topic
+🚗 Vehicle Knowledge: Vehicle Details, RC Verify, Variant Check, Fuel Type, EV Insurance, Taxi/Cab, Goods Carrier
+
+Bas poochho — koi bhi motor insurance sawaal! Hindi, English, ya Marathi mein. Main hoon na! 💪
+
+Quick topics:
+• 'IRDA rules' → Compliance guide
+• 'Company compare' → CSR + network comparison
+• 'Best plan' → Profiling-based suggestion
+• 'PA Cover' → Mandatory PA rules
+• 'Policy types' → All policy types explained
+• 'Proposal step' → PB Portal proposal guide
+• 'Vehicle details' → Complete vehicle verification guide
+• 'RC verify' → RC matching step-by-step
+• 'Variant check' → Why variant accuracy matters
+• 'EV insurance' → Electric vehicle special rules
+
+Kya jaanna hai? 😊`;
 }
 
 function buildGeneralInsuranceReply(
@@ -1039,7 +1706,19 @@ function generateSmartPriyaReply(
 
   // Update topic tracking based on message content
   const lower = userMsg.toLowerCase();
-  if (/ncb|no claim/i.test(lower)) setLastTopic("ncb");
+  if (/vehicle.*detail|gaadi.*detail|vehicle.*check/i.test(lower))
+    setLastTopic("vehicle");
+  else if (/variant/i.test(lower)) setLastTopic("variant");
+  else if (/fuel.*type|petrol|diesel|\bcng\b/i.test(lower))
+    setLastTopic("fuel");
+  else if (/registration.*date|reg.*date/i.test(lower))
+    setLastTopic("registration");
+  else if (/rc.*match|rc.*verify|rc.*check/i.test(lower))
+    setLastTopic("rc_verify");
+  else if (/electric.*vehicle|\bev\b/i.test(lower)) setLastTopic("ev");
+  else if (/taxi|cab/i.test(lower)) setLastTopic("taxi");
+  else if (/goods.*carrier|gcv/i.test(lower)) setLastTopic("goods_carrier");
+  else if (/ncb|no claim/i.test(lower)) setLastTopic("ncb");
   else if (/idv|declared value/i.test(lower)) setLastTopic("idv");
   else if (/claim/i.test(lower)) setLastTopic("claim");
   else if (/premium/i.test(lower)) setLastTopic("premium");
@@ -1127,6 +1806,14 @@ const QUICK_CHIPS = [
   "Policy Types",
   "Help",
   "Status Check",
+  "Vehicle Details Check",
+  "RC Verify Karo",
+  "Variant Check",
+  "Fuel Type",
+  "EV Insurance",
+  "Taxi Insurance",
+  "Goods Carrier",
+  "NCB History",
 ];
 
 // ---- Voice state label ----
