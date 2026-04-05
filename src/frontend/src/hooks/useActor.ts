@@ -28,7 +28,9 @@ export function useActor() {
       const actor = await createActorWithConfig(actorOptions);
       const adminToken = getSecretParameter("caffeineAdminToken") || "";
       await (
-        actor as unknown as Record<string, (token: string) => Promise<void>>
+        actor as backendInterface & {
+          _initializeAccessControlWithSecret: (secret: string) => Promise<void>;
+        }
       )._initializeAccessControlWithSecret(adminToken);
       return actor;
     },

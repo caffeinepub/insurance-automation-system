@@ -19,6 +19,7 @@ import {
   FileImage,
   Link2,
   MessageCircle,
+  Mic,
   UserCheck,
   X,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { toast } from "sonner";
 import { AGENTS, useApp } from "../context/AppContext";
 import { WORKFLOW_STATUSES, type WorkflowStatus } from "../types";
 import { statusConfig } from "./LeadCard";
+import VoiceAssistant from "./VoiceAssistant";
 
 interface LeadDetailPageProps {
   leadId: string;
@@ -290,6 +292,9 @@ export default function LeadDetailPage({
   // Document viewer state
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+
+  // Voice assistant state
+  const [showVoiceAssistant, setShowVoiceAssistant] = useState(false);
 
   // Initialize form fields when lead loads or changes
   if (lead && initializedIdRef.current !== lead.id) {
@@ -864,6 +869,17 @@ export default function LeadDetailPage({
               </div>
             )}
 
+            {/* Voice Assistant button — placed before PB Portal */}
+            <button
+              type="button"
+              onClick={() => setShowVoiceAssistant(true)}
+              className="flex items-center justify-center gap-2 w-full h-11 px-4 rounded-lg border-2 border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-bold transition-colors"
+              data-ocid="lead.detail.voice_assistant.button"
+            >
+              <Mic className="w-4 h-4" />
+              Start Voice Assistant
+            </button>
+
             <a
               href="https://www.pbpartners.com"
               target="_blank"
@@ -911,7 +927,7 @@ export default function LeadDetailPage({
         </section>
 
         <p className="text-[11px] text-gray-400 text-center">
-          Lead ID: {lead.id} · Created{" "}
+          Lead ID: {lead.id} \u00b7 Created{" "}
           {new Date(lead.createdAt).toLocaleDateString("en-IN")}
         </p>
       </div>
@@ -934,6 +950,14 @@ export default function LeadDetailPage({
           docs={docItems}
           initialIndex={viewerIndex}
           onClose={() => setViewerOpen(false)}
+        />
+      )}
+
+      {/* Voice Assistant Modal */}
+      {showVoiceAssistant && (
+        <VoiceAssistant
+          lead={lead}
+          onClose={() => setShowVoiceAssistant(false)}
         />
       )}
     </div>

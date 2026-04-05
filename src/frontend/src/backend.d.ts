@@ -55,4 +55,5 @@ export interface backendInterface {
     getUser(principal: UserId): Promise<User>;
     updateLead(leadId: LeadId, lead: Lead): Promise<void>;
     updateLeadStatus(leadId: LeadId, status: Status): Promise<void>;
+    _initializeAccessControlWithSecret(secret: string): Promise<void>;
 }
