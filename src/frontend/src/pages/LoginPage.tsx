@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Rocket, Search, Shield } from "lucide-react";
+import { Eye, EyeOff, Search, Shield } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AGENTS, useApp } from "../context/AppContext";
@@ -93,22 +93,16 @@ export default function LoginPage({ onTrackPolicy }: LoginPageProps) {
           <h1 className="text-3xl font-black text-white tracking-tight">
             PB Insurance AI
           </h1>
-          <div className="flex items-center justify-center gap-1.5 mt-1.5">
-            <Rocket className="w-3.5 h-3.5 text-blue-400" />
-            <span
-              className="text-sm font-bold"
-              style={{
-                background: "linear-gradient(90deg, #60a5fa, #22d3ee)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              AI Insurance Trainer
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 mt-1 font-medium tracking-wide">
-            Train • Guide • Close Faster 💰
+          <p
+            className="text-sm font-semibold text-center mt-1.5"
+            style={{
+              background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Priya Insurance AI Employee
           </p>
         </div>
 

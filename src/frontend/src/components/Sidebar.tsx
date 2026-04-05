@@ -90,18 +90,15 @@ export default function Sidebar({
             PB Insurance AI
           </span>
           <p
-            className="text-[11px] font-bold leading-tight mt-0.5"
+            className="text-[11px] font-semibold leading-tight mt-0.5"
             style={{
-              background: "linear-gradient(90deg, #60a5fa, #22d3ee)",
+              background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
             }}
           >
-            AI Insurance Trainer 🚀
-          </p>
-          <p className="text-[10px] text-slate-500 leading-tight">
-            Train • Guide • Close Faster 💰
+            Priya Insurance AI Employee
           </p>
         </div>
       </div>

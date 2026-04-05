@@ -396,6 +396,17 @@ export default function DashboardPage({ onAdminPanel }: DashboardPageProps) {
               <span className="text-sm font-bold text-white">
                 PB Insurance AI
               </span>
+              <p
+                className="text-[10px] font-semibold leading-tight"
+                style={{
+                  background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                Priya Insurance AI Employee
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">

@@ -133,8 +133,16 @@ export default function CustomerTrackingPage({
           <h1 className="text-2xl font-bold text-white tracking-tight">
             PB Insurance AI
           </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Insurance Automation System
+          <p
+            className="text-sm font-semibold text-center mt-1"
+            style={{
+              background: "linear-gradient(90deg, #3b82f6, #8b5cf6)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
+            Priya Insurance AI Employee
           </p>
         </div>
 
